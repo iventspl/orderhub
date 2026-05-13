@@ -1,0 +1,25 @@
+{% extends 'mainapp/base.html' %}
+{% block title %}
+    Login - Organized Company
+{% endblock %}
+{% block content %}
+
+<!-- LOGIN -->
+  <section id="login-view" class="login-wrap">
+    <div class="login-card">
+      <h1>OrderHub</h1>
+      <p class="muted">Sign in to continue</p>
+      <div class="tabs">
+        <button data-login-tab="staff" class="tab active">Staff</button>
+        <button data-login-tab="admin" class="tab">Admin</button>
+      </div>
+      <form id="login-form">
+        <label>Email<input id="login-email" type="email" required value="marek@company.com" /></label>
+        <label>Password<input id="login-password" type="password" required value="demo" /></label>
+        <button class="btn btn-primary" type="submit">Sign in</button>
+      </form>
+    </div>
+  </section>
+  
+
+{% endblock %}

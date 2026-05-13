@@ -1,0 +1,217 @@
+{% extends "mainapp/base.html" %}
+{% block title %}
+    Sales - Organized Company
+{% endblock title %}
+{% block content %}
+    <!-- ============================================================
+             4. SALES
+        ============================================================ -->
+    <section id="section-sales">
+        <div class="card">
+            <div class="card-header">
+                <h3>Sales orders</h3>
+                <div class="toolbar">
+                    <input id="o-search" type="text" placeholder="Search order, customer, city…" />
+                    <select id="o-status">
+                        <option>All</option>
+                        <option>Draft</option>
+                        <option>In warehouse</option>
+                        <option>Packed</option>
+                        <option>Shipped</option>
+                        <option>Delivered</option>
+                    </select>
+                    <select id="o-payment">
+                        <option>All</option>
+                        <option>Net 14</option>
+                        <option>Prepaid</option>
+                        <option>Net 30</option>
+                        <option>On delivery</option>
+                        <option>Paid</option>
+                    </select>
+                    <input id="o-from" type="date" title="From" />
+                    <input id="o-to" type="date" title="To" />
+                    <select id="o-sort">
+                        <option value="orderDate">Date</option>
+                        <option value="id">Order #</option>
+                        <option value="customer">Customer</option>
+                        <option value="value">Value</option>
+                        <option value="status">Status</option>
+                    </select>
+                    <button class="btn btn-sm" id="o-dir">↓</button>
+                    <button class="btn btn-primary btn-sm" id="o-new">+ New order</button>
+                </div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Order</th>
+                        <th>Value</th>
+                        <th>Customer</th>
+                        <th>City</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="clickable">
+                        <td>
+                            <strong>SO-2026-0142</strong>
+                            <div class="muted small">2026-04-30</div>
+                        </td>
+                        <td>€960.00</td>
+                        <td>Nord Lens Group</td>
+                        <td>Berlin</td>
+                        <td>
+                            <select class="status-select">
+                                <option>Draft</option>
+                                <option selected>In warehouse</option>
+                                <option>Packed</option>
+                                <option>Shipped</option>
+                                <option>Delivered</option>
+                                <option>Paid</option>
+                            </select>
+                        </td>
+                        <td>
+                            <span class="badge warehouse">In warehouse</span>
+                        </td>
+                    </tr>
+                    <tr class="clickable">
+                        <td>
+                            <strong>SO-2026-0141</strong>
+                            <div class="muted small">2026-04-29</div>
+                        </td>
+                        <td>€1,145.00</td>
+                        <td>Brillen Partner</td>
+                        <td>Prague</td>
+                        <td>
+                            <select class="status-select">
+                                <option selected>Draft</option>
+                                <option>In warehouse</option>
+                                <option>Packed</option>
+                                <option>Shipped</option>
+                                <option>Delivered</option>
+                                <option>Paid</option>
+                            </select>
+                        </td>
+                        <td>
+                            <span class="badge draft">Draft</span>
+                        </td>
+                    </tr>
+                    <!-- expanded row example -->
+                    <tr class="clickable expanded">
+                        <td>
+                            <strong>SO-2026-0140</strong>
+                            <div class="muted small">2026-04-28</div>
+                        </td>
+                        <td>€1,330.00</td>
+                        <td>Optic House</td>
+                        <td>Vienna</td>
+                        <td>
+                            <select class="status-select">
+                                <option>Draft</option>
+                                <option>In warehouse</option>
+                                <option>Packed</option>
+                                <option selected>Shipped</option>
+                                <option>Delivered</option>
+                                <option>Paid</option>
+                            </select>
+                        </td>
+                        <td>
+                            <span class="badge shipped">Shipped</span>
+                        </td>
+                    </tr>
+                    <tr class="expand-row">
+                        <td colspan="6">
+                            <dl class="kv">
+                                <dt>Owner</dt>
+                                <dd>
+                                    Marek
+                                </dd>
+                                <dt>Payment</dt>
+                                <dd>
+                                    Net 14
+                                </dd>
+                                <dt>Address</dt>
+                                <dd>
+                                    Lindenallee 12, Vienna
+                                </dd>
+                                <dt>Items</dt>
+                                <dd>
+                                    Lens kits (LEN-0102) × 6
+                                </dd>
+                                <dt>Tracking</dt>
+                                <dd>
+                                    TRK-1002 <span class="muted">(DHL)</span>
+                                </dd>
+                                <dt>Notes</dt>
+                                <dd>
+                                    Standard handling.
+                                </dd>
+                            </dl>
+                        </td>
+                    </tr>
+                    <tr class="clickable">
+                        <td>
+                            <strong>SO-2026-0139</strong>
+                            <div class="muted small">2026-04-27</div>
+                        </td>
+                        <td>€1,515.00</td>
+                        <td>Vision Markt</td>
+                        <td>Munich</td>
+                        <td>
+                            <select class="status-select">
+                                <option>Draft</option>
+                                <option>In warehouse</option>
+                                <option selected>Packed</option>
+                                <option>Shipped</option>
+                                <option>Delivered</option>
+                                <option>Paid</option>
+                            </select>
+                        </td>
+                        <td>
+                            <span class="badge packed">Packed</span>
+                        </td>
+                    </tr>
+                    <tr class="clickable">
+                        <td>
+                            <strong>SO-2026-0138</strong>
+                            <div class="muted small">2026-04-26</div>
+                        </td>
+                        <td>€1,700.00</td>
+                        <td>ClearView Retail</td>
+                        <td>Hamburg</td>
+                        <td>
+                            <select class="status-select">
+                                <option>Draft</option>
+                                <option>In warehouse</option>
+                                <option>Packed</option>
+                                <option>Shipped</option>
+                                <option selected>Delivered</option>
+                                <option>Paid</option>
+                            </select>
+                        </td>
+                        <td>
+                            <span class="badge delivered">Delivered</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="pagination">
+                <span>Showing 1–10 of 48</span>
+                <div class="right">
+                    <label>
+                        Rows
+                        <select>
+                            <option selected>10</option>
+                            <option>25</option>
+                            <option>50</option>
+                        </select>
+                    </label>
+                    <button class="btn btn-sm" disabled>Prev</button>
+                    <span>1 / 5</span>
+                    <button class="btn btn-sm">Next</button>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock content %}

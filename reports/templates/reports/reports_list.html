@@ -1,0 +1,64 @@
+{% extends "mainapp/base.html" %}
+{% block title %}
+    Reports - Organized Company
+{% endblock title %}
+{% block content %}
+    <!-- ============================================================
+             11. REPORTS
+        ============================================================ -->
+    <section id="section-reports">
+        <div class="dash-grid">
+            <div class="dash-card">
+                <div class="label">Total revenue</div>
+                <div class="count">€113,904.00</div>
+            </div>
+            <div class="dash-card">
+                <div class="label">Orders</div>
+                <div class="count">48</div>
+            </div>
+            <div class="dash-card">
+                <div class="label">Customers</div>
+                <div class="count">10</div>
+            </div>
+            <div class="dash-card">
+                <div class="label">Warehouses</div>
+                <div class="count">3</div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <h3>Orders by status</h3>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Draft</td>
+                        <td>10</td>
+                    </tr>
+                    <tr>
+                        <td>In warehouse</td>
+                        <td>10</td>
+                    </tr>
+                    <tr>
+                        <td>Packed</td>
+                        <td>10</td>
+                    </tr>
+                    <tr>
+                        <td>Shipped</td>
+                        <td>10</td>
+                    </tr>
+                    <tr>
+                        <td>Delivered</td>
+                        <td>8</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endblock content %}

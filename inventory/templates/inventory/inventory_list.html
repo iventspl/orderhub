@@ -1,0 +1,76 @@
+{% extends "mainapp/base.html" %}
+{% block title %}
+    Inventory - Organized Company
+{% endblock title %}
+{% block content %}
+    <!-- ============================================================
+             10. INVENTORY
+        ============================================================ -->
+    <section id="section-inventory">
+        <div class="card">
+            <div class="card-header">
+                <h3>Inventory</h3>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>SKU</th>
+                        <th>Product</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Store</th>
+                        <th>Warehouse</th>
+                        <th>Reorder</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>LEN-0100</td>
+                        <td>Premium lens 1</td>
+                        <td>Lenses</td>
+                        <td>€18.00</td>
+                        <td>0</td>
+                        <td>18</td>
+                        <td>8</td>
+                    </tr>
+                    <tr>
+                        <td>FRM-0101</td>
+                        <td>Classic frame 2</td>
+                        <td>Frames</td>
+                        <td>€29.00</td>
+                        <td>7</td>
+                        <td>37</td>
+                        <td>9</td>
+                    </tr>
+                    <tr>
+                        <td>CLN-0102</td>
+                        <td>Cleaner set 3</td>
+                        <td>Accessories</td>
+                        <td>€40.00</td>
+                        <td>14</td>
+                        <td>56</td>
+                        <td>10</td>
+                    </tr>
+                    <tr>
+                        <td>DSP-0103</td>
+                        <td>Display stand 4</td>
+                        <td>Displays</td>
+                        <td>€51.00</td>
+                        <td>21</td>
+                        <td>75</td>
+                        <td>11</td>
+                    </tr>
+                    <tr>
+                        <td>ACC-0104</td>
+                        <td>Travel case 5</td>
+                        <td>Accessories</td>
+                        <td>€62.00</td>
+                        <td>0</td>
+                        <td>94</td>
+                        <td>12</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endblock content %}

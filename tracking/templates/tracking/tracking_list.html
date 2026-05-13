@@ -1,0 +1,60 @@
+{% extends "mainapp/base.html" %}
+{% block title %}
+    Tracking - Organized Company
+{% endblock title %}
+{% block content %}
+    <!-- ============================================================
+             7. TRACKING
+        ============================================================ -->
+    <section id="section-tracking">
+        <div class="card">
+            <div class="card-header">
+                <h3>Shipments</h3>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Order</th>
+                        <th>Customer</th>
+                        <th>Destination</th>
+                        <th>Tracking</th>
+                        <th>Carrier</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>SO-2026-0140</td>
+                        <td>Optic House</td>
+                        <td>Lindenallee 12, Vienna</td>
+                        <td>TRK-1002</td>
+                        <td>DHL</td>
+                        <td>
+                            <span class="badge shipped">Shipped</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>SO-2026-0135</td>
+                        <td>Alpine Optical</td>
+                        <td>Mariahilfer Str. 4, Vienna</td>
+                        <td>TRK-1007</td>
+                        <td>DHL</td>
+                        <td>
+                            <span class="badge delivered">Delivered</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>SO-2026-0130</td>
+                        <td>Metro Eyewear</td>
+                        <td>Karlova 88, Prague</td>
+                        <td>TRK-1012</td>
+                        <td>DHL</td>
+                        <td>
+                            <span class="badge shipped">Shipped</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endblock content %}

@@ -1,0 +1,90 @@
+{% extends "mainapp/base.html" %}
+{% block title %}
+    Warehouse - Organized Company
+{% endblock title %}
+{% block content %}
+    <!-- ============================================================
+             5. WAREHOUSE
+        ============================================================ -->
+    <section id="section-warehouse">
+        <div class="card">
+            <div class="card-header">
+                <h3>Warehouse</h3>
+                <div class="toolbar">
+                    <select id="wh-pick">
+                        <option value="wh-berlin" selected>Berlin Main — Berlin, DE</option>
+                        <option value="wh-munich">Munich Hub — Munich, DE</option>
+                        <option value="wh-vienna">Vienna Store — Vienna, AT</option>
+                    </select>
+                    <input id="wh-search" type="text" placeholder="Search SKU, name, barcode…" />
+                    <button class="btn btn-sm" id="wh-transfer">Transfer stock</button>
+                    <button class="btn btn-sm" id="wh-history">Transfer history</button>
+                </div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>SKU</th>
+                        <th>Item</th>
+                        <th>Quantity</th>
+                        <th>Zone</th>
+                        <th>Status</th>
+                        <th>Barcode</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>LEN-001</td>
+                        <td>Lens kits</td>
+                        <td>8 boxes</td>
+                        <td>A-01</td>
+                        <td>
+                            <span class="badge">Ready</span>
+                        </td>
+                        <td class="muted small">5400000000137</td>
+                    </tr>
+                    <tr>
+                        <td>FRM-002</td>
+                        <td>Classic frames</td>
+                        <td>11 boxes</td>
+                        <td>B-02</td>
+                        <td>
+                            <span class="badge">Picking</span>
+                        </td>
+                        <td class="muted small">5400000000274</td>
+                    </tr>
+                    <tr>
+                        <td>CLN-003</td>
+                        <td>Cleaner sets</td>
+                        <td>14 boxes</td>
+                        <td>C-03</td>
+                        <td>
+                            <span class="badge">Packed</span>
+                        </td>
+                        <td class="muted small">5400000000411</td>
+                    </tr>
+                    <tr>
+                        <td>DSP-004</td>
+                        <td>Display stands</td>
+                        <td>3 pallets</td>
+                        <td>A-04</td>
+                        <td>
+                            <span class="badge">Reserved</span>
+                        </td>
+                        <td class="muted small">5400000000548</td>
+                    </tr>
+                    <tr>
+                        <td>SUN-005</td>
+                        <td>Sun lenses</td>
+                        <td>17 boxes</td>
+                        <td>B-05</td>
+                        <td>
+                            <span class="badge">Low stock</span>
+                        </td>
+                        <td class="muted small">5400000000685</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endblock content %}

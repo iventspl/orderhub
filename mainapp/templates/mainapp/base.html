@@ -1,0 +1,99 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>
+            {% block title %}
+                Organized Company
+            {% endblock title %}
+        </title>
+        {% block extra_head %}
+        {% endblock extra_head %}
+        <link rel="stylesheet" href="{% static 'css/base.css' %}">
+        {% block extra_css %}
+        {% endblock extra_css %}
+    </head>
+    <body>
+        <section id="app-view" class="app-shell">
+            <aside class="sidebar">
+                <div class="brand">OrderHub</div>
+                <nav id="nav">
+                    <a href="{% url 'mainapp:home' %}"
+                       class="nav-item {% if page == 'home' %}active{% endif %}">
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="{% url 'sales:sales_list' %}"
+                       class="nav-item {% if page == 'sales' %}active{% endif %}">
+                        <span>Sales</span>
+                        <span class="count">48</span>
+                    </a>
+                    <a href="{% url 'warehouse:warehouse_list' %}"
+                       class="nav-item {% if page == 'warehouse' %}active{% endif %}">
+                        <span>Warehouse</span>
+                        <span class="count">3</span>
+                    </a>
+                    <a href="{% url 'packing:packing_list' %}"
+                       class="nav-item {% if page == 'packing' %}active{% endif %}">
+                        <span>Packing</span>
+                        <span class="count">19</span>
+                    </a>
+                    <a href="{% url 'tracking:tracking_list' %}"
+                       class="nav-item {% if page == 'tracking' %}active{% endif %}">
+                        <span>Tracking</span>
+                        <span class="count">10</span>
+                    </a>
+                    <a href="{% url 'customers:customers_list' %}"
+                       class="nav-item {% if page == 'customers' %}active{% endif %}">
+                        <span>Customers</span>
+                        <span class="count">10</span>
+                    </a>
+                    <a href="{% url 'contacts:contacts_list' %}"
+                       class="nav-item {% if page == 'contacts' %}active{% endif %}">
+                        <span>Contacts</span>
+                        <span class="count">30</span>
+                    </a>
+                    <a href="{% url 'inventory:inventory_list' %}"
+                       class="nav-item {% if page == 'inventory' %}active{% endif %}">
+                        <span>Inventory</span>
+                        <span class="count">50</span>
+                    </a>
+                    <a href="{% url 'reports:reports_list' %}"
+                       class="nav-item {% if page == 'reports' %}active{% endif %}">
+                        <span>Reports</span>
+                    </a>
+                    <a href="{% url 'transfers:transfers_list' %}"
+                       class="nav-item {% if page == 'transfers' %}active{% endif %}">
+                        <span>Transfers</span>
+                        <span class="count">0</span>
+                    </a>
+                </nav>
+                <div class="sidebar-footer">
+                    <div id="user-chip" class="user-chip">
+                        <strong>Marek Novak</strong>
+                        <span class="muted small">Staff · Berlin Store</span>
+                    </div>
+                    <button id="logout-btn" class="btn btn-quiet">Log out</button>
+                </div>
+            </aside>
+            <main class="main">
+                <header class="topbar">
+                    <h2 id="page-title">Dashboard</h2>
+                    <div class="topbar-actions">
+                        <span id="session-timer" class="muted small"></span>
+                    </div>
+                </header>
+                <div id="content">
+                    {% block content %}
+                    {% endblock content %}
+                </div>
+                <!-- /#content -->
+            </main>
+        </section>
+        <!-- /#app-view -->
+        <script src="{% static 'js/main.js' %}" defer></script>
+        {% block extra_js %}
+        {% endblock extra_js %}
+    </body>
+</html>
