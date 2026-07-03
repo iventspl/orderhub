@@ -27,46 +27,62 @@
                     <a href="{% url 'sales:sales_list' %}"
                        class="nav-item {% if page == 'sales' %}active{% endif %}">
                         <span>Sales</span>
-                        <span class="count">48</span>
+                        <span class="count">{{ total_sales_orders|default:0 }}</span>
                     </a>
                     <a href="{% url 'warehouse:warehouse_list' %}"
                        class="nav-item {% if page == 'warehouse' %}active{% endif %}">
                         <span>Warehouse</span>
-                        <span class="count">3</span>
+                        <span class="count">{{ total_warehouses|default:0 }}</span>
                     </a>
                     <a href="{% url 'packing:packing_list' %}"
                        class="nav-item {% if page == 'packing' %}active{% endif %}">
                         <span>Packing</span>
-                        <span class="count">19</span>
+                        <span class="count">{{ total_packing_orders|default:0 }}</span>
                     </a>
                     <a href="{% url 'tracking:tracking_list' %}"
                        class="nav-item {% if page == 'tracking' %}active{% endif %}">
                         <span>Tracking</span>
-                        <span class="count">10</span>
+                        <span class="count">{{ total_tracking|default:0 }}</span>
                     </a>
                     <a href="{% url 'customers:customers_list' %}"
                        class="nav-item {% if page == 'customers' %}active{% endif %}">
                         <span>Customers</span>
-                        <span class="count">10</span>
+                        <span class="count">{{ total_customers|default:0 }}</span>
                     </a>
                     <a href="{% url 'contacts:contacts_list' %}"
                        class="nav-item {% if page == 'contacts' %}active{% endif %}">
                         <span>Contacts</span>
-                        <span class="count">30</span>
+                        <span class="count">{{ total_contacts|default:0 }}</span>
                     </a>
                     <a href="{% url 'inventory:inventory_list' %}"
                        class="nav-item {% if page == 'inventory' %}active{% endif %}">
                         <span>Inventory</span>
-                        <span class="count">50</span>
+                        <span class="count">{{ total_inventory|default:0 }}</span>
                     </a>
                     <a href="{% url 'reports:reports_list' %}"
                        class="nav-item {% if page == 'reports' %}active{% endif %}">
                         <span>Reports</span>
+                        <span class="count">{{ total_reports|default:0 }}</span>
                     </a>
                     <a href="{% url 'transfers:transfers_list' %}"
                        class="nav-item {% if page == 'transfers' %}active{% endif %}">
                         <span>Transfers</span>
-                        <span class="count">0</span>
+                        <span class="count">{{ total_transfers|default:0 }}</span>
+                    </a>
+                    <a href="{% url 'staff:staff_dashboard' %}"
+                       class="nav-item {% if page == 'staff' %}active{% endif %}">
+                        <span>Staff</span>
+                        <span class="count">{{ total_staff|default:0 }}</span>
+                    </a>
+                    <a href="{% url 'helpcenter:help_center_dashboard' %}"
+                       class="nav-item {% if page == 'helpcenter' %}active{% endif %}">
+                        <span>Help Center</span>
+                        <span class="count">{{ total_helpcenter|default:0 }}</span>
+                    </a>
+                    <a href="{% url 'discussion:discussion_dashboard' %}"
+                       class="nav-item {% if page == 'discussion' %}active{% endif %}">
+                        <span>Discussion</span>
+                        <span class="count">{{ total_discussion|default:0 }}</span>
                     </a>
                 </nav>
                 <div class="sidebar-footer">
@@ -74,7 +90,10 @@
                         <strong>Marek Novak</strong>
                         <span class="muted small">Staff · Berlin Store</span>
                     </div>
-                    <button id="logout-btn" class="btn btn-quiet">Log out</button>
+                    <form method="post" action="{% url 'users:user-logout' %}">
+                        {% csrf_token %}
+                        <button id="logout-btn" class="btn btn-quiet" type="submit">Log out</button>
+                    </form>
                 </div>
             </aside>
             <main class="main">
@@ -85,6 +104,11 @@
                     </div>
                 </header>
                 <div id="content">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert active {% if message.tags == 'success' %}ok{% else %}err{% endif %}">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
                     {% block content %}
                     {% endblock content %}
                 </div>

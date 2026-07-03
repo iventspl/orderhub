@@ -1,0 +1,163 @@
+{% extends 'mainapp/base.html' %}
+{% load static %}
+{% block title %}Staff - Organized Company{% endblock %}
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/staff.css' %}">
+{% endblock extra_css %}
+{% block content %}
+  <!-- STAFF LIST -->
+  <!--
+  <section id="staff-view" class="staff-wrap">
+    <div class="staff-card">
+        <h1>Staff Members</h1>
+        <p class="muted">List of all staff members in the organization</p>
+        <div class="staff-list">
+            {% for staff in staff_members %}
+            <div class="staff-member">
+                <span class="name">{{ staff.get_full_name }}</span>
+                <span class="email">{{ staff.email }}</span>
+                <span class="role">{{ staff.get_role_display }}</span>
+            </div>
+            {% empty %}
+            <p>No staff members found.</p>
+            {% endfor %}
+        </div>
+    </div>
+    {% if is_admin %}
+    <div>
+      <h3>Add new staff member</h3>
+      <form id="add-staff-form" method="post" action="{% url 'staff:staff_dashboard' %}">
+        {% csrf_token %}
+        <label>
+          {{ form.first_name.label }}
+          {{ form.first_name }}
+        </label>
+        <label>
+          {{ form.last_name.label }}
+          {{ form.last_name }}
+        </label>
+        <label>
+          {{ form.username.label }}
+          {{ form.username }}
+        </label>
+        <label>
+          {{ form.password.label }}
+          {{ form.password }}
+        </label>
+        <label>
+          {{ form.email.label }}
+          {{ form.email }}
+        </label>
+        <label>
+          {{ form.phone_number.label }}
+          {{ form.phone_number }}
+        </label>
+        <label>
+          {{ form.address.label }}
+          {{ form.address }}
+        </label>
+        <label>
+          {{ form.city.label }}
+          {{ form.city }}
+        </label>
+        <label>
+          {{ form.state.label }}
+          {{ form.state }}
+        </label>
+        <label>
+          {{ form.zip_code.label }}
+          {{ form.zip_code }}
+        </label>
+        <label>
+          {{ form.country.label }}
+          {{ form.country }}
+        </label>
+        <label>
+          {{ form.assigned_warehouse.label }}
+          {{ form.assigned_warehouse }}
+        </label>
+        <label>
+          {{ form.assigned_role.label }}
+          {{ form.assigned_role }}
+        </label>
+        <label>
+          {{ form.department.label }}
+          {{ form.department }}
+        </label>
+            <option value="employee">Employee</option>
+          </select>
+        </label>
+        <button class="btn btn-primary" type="submit">Add Staff Member</button>
+      </form>
+    </div>
+    {% endif %}
+  </section>
+  -->
+
+<section class="staff-wrap">
+  <div class="staff-header">
+    <div>
+      <p class="staff-subtitle">Staff</p>
+      <h3 class="staff-title">Coworkers at OrderHub Poland</h3>
+      <p class="staff-note">List is automatically filtered to your company. Reach colleagues by chat or email and search the full history.</p>
+    </div>
+    <div class="staff-note">
+      <span class="company-pill">OrderHub Poland</span>
+      <span>{{ staff_members|length }} people</span>
+    </div>
+  </div>
+
+  <div class="updates">
+    <div class="updates-head">
+      <span>Presence updates</span>
+      <button type="button" class="link-btn">Clear</button>
+    </div>
+    <ul class="updates-list">
+      <li><span><span class="dot online"></span><strong>Ewa Dabrowska</strong> <span class="muted">Away -> Online</span></span><span class="muted">07:02</span></li>
+      <li><span><span class="dot offline"></span><strong>Karolina Zielinska</strong> <span class="muted">Online -> Offline</span></span><span class="muted">07:42</span></li>
+      <li><span><span class="dot away"></span><strong>Ewa Dabrowska</strong> <span class="muted">Offline -> Away</span></span><span class="muted">07:00</span></li>
+      <li><span><span class="dot offline"></span><strong>Julia Wisniewska</strong> <span class="muted">Away -> Offline</span></span><span class="muted">07:01</span></li>
+    </ul>
+  </div>
+
+  <div class="toolbar">
+    <div class="chips">
+      <button class="chip active" type="button">All</button>
+      <button class="chip" type="button">Sales</button>
+      <button class="chip" type="button">Warehouse</button>
+      <button class="chip" type="button">Packing</button>
+      <button class="chip" type="button">IT</button>
+      <button class="chip" type="button">HR</button>
+      <button class="chip" type="button">Finance</button>
+    </div>
+    <input class="search" placeholder="Search by name, role, email" />
+  </div>
+
+  <div class="layout">
+    <div class="panel">
+      <div class="panel-head">Team members · OrderHub Poland</div>
+        {% for staff in staff_members %}
+          <button class="member-item" type="button" data-memberID="{{ staff.pk }}">
+            <span class="avatar">{{ staff.get_initials }}<span class="status-dot offline"></span></span>
+            <span class="member-main">
+              <p class="member-name">{{ staff.get_full_name }}</p>
+              <p class="member-role">{{ staff.get_role_display }} · {{ staff.get_department_display|default:"N/A" }}</p>
+            </span>
+            <span class="member-state">online/offline<br />active now</span>
+          </button>
+        {% empty %}
+          <p>No staff members found.</p>
+        {% endfor %}
+
+    </div>
+
+    <aside class="side">
+      
+    </aside>
+  </div>
+</section>
+
+{% endblock %}
+{% block extra_js %}
+  <script src="{% static 'js/staff.js' %}"></script>
+{% endblock extra_js %}

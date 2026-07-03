@@ -1,0 +1,84 @@
+.section-packing {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+#tab-panel-active{
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* ── Progress bar: warianty kolorów ──────────────────────────────
+   Kolory mapowane przez JS (_progressColorClass) i model Python
+   (progress_color_class). Domyślny kolor (bez klasy) = primary.
+   1–49%  → danger  (czerwony)
+   50–89% → warning (żółty)
+   90–99% → info    (niebieski = primary, brak override)
+   100%   → success (zielony)
+─────────────────────────────────────────────────────────────── */
+.progress-bar.danger  > div { background: #e84545; }
+.progress-bar.warning > div { background: #f59e0b; }
+.progress-bar.success > div { background: #22c55e; }
+/* .progress-bar.info używa domyślnego var(--primary) z base.css */
+
+/*  Karta postępu: pojedyncze zlecenie  */
+.progress-item {
+    margin-bottom: 14px;
+}
+.progress-item:last-child {
+    margin-bottom: 0;
+}
+.progress-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+/* Batch action bar
+   Pojawia się sticky na dole ekranu gdy >=1 checkbox zaznaczony.
+   hidden - display:none (toggle przez JS). */
+.batch-bar {
+    position: sticky;
+    bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface, #fff);
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 8px;
+    padding: 10px 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .12);
+    z-index: 100;
+}
+.batch-bar.hidden {
+    display: none;
+}
+
+/*  "Select all" label w card-header  */
+.select-all-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.pdf-btn {
+    text-decoration: none;
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    width: 80px;
+}
+
+
+.expand-row {
+    display: none;
+}
+
+.expand-row.active {
+    display: table-row;
+}

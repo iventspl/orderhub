@@ -12,13 +12,15 @@
                 <h3>Customers</h3>
                 <div class="toolbar">
                     <input id="c-search" type="text" placeholder="Search…" />
-                    <button class="btn btn-primary btn-sm" id="c-new">+ New customer</button>
+                    <button class="btn btn-primary btn-sm"
+                            id="c-new"
+                            onclick="openModal('customer-modal')">+ New customer</button>
                 </div>
             </div>
             <table>
                 <thead>
                     <tr>
-                        <th>ID</th>
+                        <th>ID/Code</th>
                         <th>Name</th>
                         <th>Contact</th>
                         <th>Email</th>
@@ -28,63 +30,70 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>CU-001</td>
-                        <td>Nord Lens Group</td>
-                        <td>Lena Hoffmann</td>
-                        <td>orders@nordlensgroup.example</td>
-                        <td>+49 200000000</td>
-                        <td>Berlin</td>
-                        <td>
-                            <button class="btn btn-sm">Edit</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>CU-002</td>
-                        <td>Brillen Partner</td>
-                        <td>Pavel Novak</td>
-                        <td>orders@brillenpartner.example</td>
-                        <td>+49 200006173</td>
-                        <td>Prague</td>
-                        <td>
-                            <button class="btn btn-sm">Edit</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>CU-003</td>
-                        <td>Optic House</td>
-                        <td>Greta Weiss</td>
-                        <td>orders@optichouse.example</td>
-                        <td>+49 200012346</td>
-                        <td>Vienna</td>
-                        <td>
-                            <button class="btn btn-sm">Edit</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>CU-004</td>
-                        <td>Vision Markt</td>
-                        <td>Jonas Klein</td>
-                        <td>orders@visionmarkt.example</td>
-                        <td>+49 200018519</td>
-                        <td>Munich</td>
-                        <td>
-                            <button class="btn btn-sm">Edit</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>CU-005</td>
-                        <td>ClearView Retail</td>
-                        <td>Marta Varga</td>
-                        <td>orders@clearviewretail.example</td>
-                        <td>+49 200024692</td>
-                        <td>Hamburg</td>
-                        <td>
-                            <button class="btn btn-sm">Edit</button>
-                        </td>
-                    </tr>
+                    {% for customer in customers %}
+                        <tr class="clickable">
+                            <td>{% if customer.customer_code %}{{ customer.customer_code }}{% else %}{{ customer.id }}{% endif %}</td>
+                            <td>{{ customer.name }}</td>
+                            <td>{{ customer.get_full_name }}</td>
+                            <td>{{ customer.email }}</td>
+                            <td>{{ customer.phone_number }}</td>
+                            <td>{{ customer.city|title }}</td>
+                            <td>
+                                <button class="btn btn-sm">Edit</button>
+                            </td>
+                        </tr>
+                    {% endfor %}
                 </tbody>
             </table>
+        </div>
+        <!-- ============================================================
+       13d. MODAL — Edit customer (reference, commented out)
+============================================================ -->
+        <div id="customer-modal" class="modal-backdrop hidden">
+            <div class="modal" role="dialog">
+                <div class="modal-header">
+                    <h3 style="margin:0">Edit Nord Lens Group</h3>
+                    <button class="btn btn-quiet" onclick="closeModal('customer-modal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <label>
+                        Name
+                        <input data-f="name" value="Nord Lens Group" />
+                    </label>
+                    <label>
+                        Contact
+                        <input data-f="contactName" value="Lena Hoffmann" />
+                    </label>
+                    <label>
+                        Email
+                        <input data-f="email" value="orders@nordlensgroup.example" />
+                    </label>
+                    <label>
+                        Phone
+                        <input data-f="phone" value="+49 200000000" />
+                    </label>
+                    <label>
+                        Address
+                        <input data-f="address" value="Lindenallee 12" />
+                    </label>
+                    <label>
+                        City
+                        <input data-f="city" value="Berlin" />
+                    </label>
+                    <label>
+                        Country
+                        <input data-f="country" value="DE" />
+                    </label>
+                    <label>
+                        Notes
+                        <input data-f="notes" value="Preferred VIP partner" />
+                    </label>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn" onclick="closeModal('customer-modal')">Cancel</button>
+                    <button class="btn btn-primary">Save</button>
+                </div>
+            </div>
         </div>
     </section>
 {% endblock content %}

@@ -1,0 +1,47 @@
+{% extends 'mainapp/base.html' %}
+{% load static %}
+{% block title %}Register - Organized Company{% endblock %}
+{% block content %}
+  <!-- REGISTER -->
+  <section id="register-view" class="login-wrap">
+    <div class="login-card">
+      <h1>OrderHub</h1>
+      <p class="muted">Create an account to get started</p>
+      <div class="tabs">
+        <button data-login-tab="login" class="tab">Login</button>
+        <button data-login-tab="register" class="tab active">Register</button>
+      </div>
+      <form id="register-form" method="post" action="{% url 'users:user-register' %}">
+        {% csrf_token %}
+        {% if form.errors %}
+          <div class="form-errors">
+            {% for field in form %}
+              {% for error in field.errors %}
+                <p>{{ error }}</p>
+              {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+              <p>{{ error }}</p>
+            {% endfor %}
+          </div>
+        {% endif %}
+        <label>
+          {{ form.username.label }}
+          {{ form.username }}
+        </label>
+        <label>
+          {{ form.password.label }}
+          {{ form.password }}
+        </label>
+        <label>
+          {{ form.confirm_password.label }}
+          {{ form.confirm_password }}
+        </label>
+        <button class="btn btn-primary" type="submit">Register</button>
+      </form>
+    </div>
+  </section>
+{% endblock %}
+{% block extra_js %}
+  <script src="{% static 'js/users.js' %}"></script>
+{% endblock extra_js %}

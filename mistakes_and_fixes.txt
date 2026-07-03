@@ -1,0 +1,98 @@
+F() to wyrażenie Django, które nie ładuje wartości do Pythona — zamiast tego generuje czysty SQL:
+
+UPDATE inventory_product
+SET reserved_quantity = reserved_quantity - 3
+WHERE id = 42;
+
+Bez F() wyglądałoby to tak:
+
+# ❌ race condition
+product = Product.objects.get(pk=item.product_id)   # SELECT: reserved = 10
+product.reserved_quantity -= 3                        # Python: 10 - 3 = 7
+product.save() 
+
+Jeśli dwa wątki jednocześnie odczytają 10, oba zapiszą 7 — zamiast 4. To lost update.
+
+Z F():
+# ✅ atomowe — jeden strzał do bazy
+Product.objects.filter(pk=item.product_id).update(
+    reserved_quantity=F('reserved_quantity') - item.quantity_required
+)
+
+Baza danych sama odczytuje i odejmuje w ramach jednej instrukcji SQL, więc równoległe zapytania nie mogą nadpisać siebie nawzajem. W kontekście sygnałów (gdzie mogą działać jednocześnie) to poprawna praktyka.
+
+---
+
+BŁĄD: get_object_or_404 w sygnałach Django
+
+get_object_or_404 rzuca Http404, nie standardowy wyjątek Django.
+Http404 w sygnale to nieobsłużony wyjątek — sygnał pada, ale widok działa normalnie.
+Efekt: kasowanie / update nie nastąpi, brak widocznego błędu. Trudne do debugowania.
+
+# ❌ ŹLE
+user_company = get_object_or_404(Membership, user=instance.order.created_by).company
+
+# ✅ DOBRZE
+membership = Membership.objects.filter(user=instance.created_by).first()
+if not membership:
+    return
+
+---
+
+BŁĄD: Używanie Membership jako pośrednika do company_id w sygnałach
+
+Szukanie company_id przez Membership gdy model już ma company_id bezpośrednio
+lub bezpośrednią relację (np. OneToOneField). Crash gdy created_by=None lub brak Membership.
+
+# ❌ ŹLE — zbędny pośrednik
+membership = Membership.objects.filter(user=instance.created_by).select_related('company').first()
+packing_order = PackingOrder.objects.filter(order=instance, company_id=membership.company_id).first()
+
+# ✅ DOBRZE — PackingOrder.order to OneToOneField, wystarczy order=instance
+packing_order = PackingOrder.objects.filter(order=instance).first()
+
+Zasada: przed użyciem Membership jako pośrednika sprawdź czy model nie ma już
+company_id lub bezpośredniej relacji do obiektu, po którym filtrujesz.
+
+---
+
+BŁĄD: F('reserved_quantity') - X może dać wartość ujemną → naruszenie check constraint
+
+PositiveIntegerField ma w PostgreSQL constraint CHECK (reserved_quantity >= 0).
+Jeśli reserved_quantity < quantity_required, wynik F() - X jest ujemny → baza odrzuca UPDATE.
+Błąd: "new row violates check constraint inventory_product_stock_reserved_check"
+
+# ❌ ŹLE — może dać wartość ujemną
+Product.objects.filter(pk=item.product_id).update(
+    reserved_quantity=F('reserved_quantity') - item.quantity_required
+)
+
+# ✅ DOBRZE — Greatest zapewnia minimum 0 (odpowiednik SQL GREATEST(..., 0))
+from django.db.models.functions import Greatest
+
+Product.objects.filter(pk=item.product_id).update(
+    reserved_quantity=Greatest(F('reserved_quantity') - item.quantity_required, 0)
+)
+
+---
+
+BŁĄD: sygnał post_save kasuje obiekt, ale widok fetchuje go PO wywołaniu save() i nie wie że jest skasowany
+
+Sytuacja: sales view wywołuje order.save() → sygnał kasuje PackingOrder → potem widok robi
+packing_order = PackingOrder.objects.filter(order=order).first()  →  None (skasowany)
+Następnie sync code widzi packing_order = None + items_requiring_main niepuste i TWORZY NOWY PackingOrder!
+
+To powoduje "błędne koło": zamówienie wróciło do kolejki pakowania mimo że miało być dostarczone.
+
+# ❌ ŹLE — sync code nie wie że sygnał już obsłużył cleanup
+if not stock_already_deducted:
+    if items_requiring_main and not packing_order:
+        packing_order = PackingOrder.objects.create(...)  # tworzy nowy PENDING PO!
+
+# ✅ DOBRZE — pomiń sync dla statusów terminalnych obsługiwanych przez sygnał
+terminal_status = new_status in (SalesOrder.SalesOrderStatus.DELIVERED, SalesOrder.SalesOrderStatus.CANCELLED)
+if not stock_already_deducted and not terminal_status:
+    # ... sync PackingOrder tylko dla statusów pośrednich ...
+
+Zasada: jeśli widok wywołuje model.save() który triggeruje sygnał czyszczący powiązane obiekty,
+sprawdź czy kod PO save() nie próbuje "naprawić" tego co sygnał właśnie skasował.

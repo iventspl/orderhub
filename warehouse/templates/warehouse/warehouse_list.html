@@ -1,4 +1,5 @@
 {% extends "mainapp/base.html" %}
+{% load static %}
 {% block title %}
     Warehouse - Organized Company
 {% endblock title %}
@@ -12,79 +13,178 @@
                 <h3>Warehouse</h3>
                 <div class="toolbar">
                     <select id="wh-pick">
-                        <option value="wh-berlin" selected>Berlin Main — Berlin, DE</option>
-                        <option value="wh-munich">Munich Hub — Munich, DE</option>
-                        <option value="wh-vienna">Vienna Store — Vienna, AT</option>
+                        <option value="all" selected>All warehouses</option>
+                        <option value="main">Main warehouse</option>
+                        <option value="shop">Shop warehouse</option>
+                        <option value="third-party">Third-party warehouse</option>
                     </select>
-                    <input id="wh-search" type="text" placeholder="Search SKU, name, barcode…" />
-                    <button class="btn btn-sm" id="wh-transfer">Transfer stock</button>
+                    <input id="wh-search" type="text" placeholder="Search warehouses..." />
+                    <button class="btn btn-primary btn-sm"
+                            id="wh-new"
+                            type="button"
+                            onclick="openModal('warehouse-create-modal')">+ New warehouse</button>
+                    <button class="btn btn-sm"
+                            id="wh-transfer"
+                            type="button"
+                            onclick="openModal('warehouse-transfer-modal')">Transfer stock</button>
                     <button class="btn btn-sm" id="wh-history">Transfer history</button>
                 </div>
             </div>
             <table>
                 <thead>
                     <tr>
-                        <th>SKU</th>
-                        <th>Item</th>
-                        <th>Quantity</th>
-                        <th>Zone</th>
-                        <th>Status</th>
-                        <th>Barcode</th>
+                        <th>NAME</th>
+                        <th>ADDRESS</th>
+                        <th>CITY</th>
+                        <th>ZIP CODE</th>
+                        <th>COUNTRY</th>
+                        <th>NOTES</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>LEN-001</td>
-                        <td>Lens kits</td>
-                        <td>8 boxes</td>
-                        <td>A-01</td>
-                        <td>
-                            <span class="badge">Ready</span>
-                        </td>
-                        <td class="muted small">5400000000137</td>
-                    </tr>
-                    <tr>
-                        <td>FRM-002</td>
-                        <td>Classic frames</td>
-                        <td>11 boxes</td>
-                        <td>B-02</td>
-                        <td>
-                            <span class="badge">Picking</span>
-                        </td>
-                        <td class="muted small">5400000000274</td>
-                    </tr>
-                    <tr>
-                        <td>CLN-003</td>
-                        <td>Cleaner sets</td>
-                        <td>14 boxes</td>
-                        <td>C-03</td>
-                        <td>
-                            <span class="badge">Packed</span>
-                        </td>
-                        <td class="muted small">5400000000411</td>
-                    </tr>
-                    <tr>
-                        <td>DSP-004</td>
-                        <td>Display stands</td>
-                        <td>3 pallets</td>
-                        <td>A-04</td>
-                        <td>
-                            <span class="badge">Reserved</span>
-                        </td>
-                        <td class="muted small">5400000000548</td>
-                    </tr>
-                    <tr>
-                        <td>SUN-005</td>
-                        <td>Sun lenses</td>
-                        <td>17 boxes</td>
-                        <td>B-05</td>
-                        <td>
-                            <span class="badge">Low stock</span>
-                        </td>
-                        <td class="muted small">5400000000685</td>
-                    </tr>
+                    {% for warehouse in warehouses %}
+                        <tr class="clickable">
+                            <td>{{ warehouse.name }}</td>
+                            <td>{{ warehouse.address }}</td>
+                            <td>{{ warehouse.city }}</td>
+                            <td>{{ warehouse.zip_code }}</td>
+                            <td>{{ warehouse.country }}</td>
+                            <td class="muted small">{{ warehouse.notes|truncatechars:50 }}</td>
+                            <td>
+                                <button class="btn btn-sm wh-details-btn"
+                                        type="button"
+                                        data-warehouse-id="{{ warehouse.id }}">Details</button>
+                            </td>
+                        </tr>
+                    {% endfor %}
                 </tbody>
             </table>
         </div>
     </section>
+    <!-- ============================================================
+       13e. MODAL - Warehouse transfer
+    ============================================================ -->
+    <div id="warehouse-transfer-modal" class="modal-backdrop hidden">
+        <div class="modal"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="warehouse-transfer-title">
+            <div class="modal-header">
+                <h3 id="warehouse-transfer-title" style="margin:0">Transfer stock</h3>
+                <button class="btn btn-quiet"
+                        type="button"
+                        onclick="closeModal('warehouse-transfer-modal')">&times;</button>
+            </div>
+            <form>
+                <div class="modal-body">
+                    <div class="row">
+                        <label>
+                            From warehouse
+                            <select name="from_warehouse">
+                                {% for warehouse in warehouses %}
+                                    <option value="{{ warehouse.id }}">{{ warehouse.name }} ({{ warehouse.city }})</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label>
+                            To warehouse
+                            <select name="to_warehouse">
+                                {% for warehouse in warehouses %}
+                                    <option value="{{ warehouse.id }}">{{ warehouse.name }} ({{ warehouse.city }})</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                    </div>
+                    <div class="row">
+                        <label>
+                            SKU
+                            <input type="text" name="sku" placeholder="e.g. LEN-001" />
+                        </label>
+                        <label>
+                            Quantity
+                            <input type="number" name="quantity" min="1" step="1" placeholder="e.g. 10" />
+                        </label>
+                    </div>
+                    <label>
+                        Notes
+                        <textarea name="notes" rows="3" placeholder="Optional transfer note"></textarea>
+                    </label>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn"
+                            type="button"
+                            onclick="closeModal('warehouse-transfer-modal')">Cancel</button>
+                    <button class="btn btn-primary" type="button">Create transfer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- ============================================================
+       13f. MODAL - New warehouse
+    ============================================================ -->
+    <div id="warehouse-create-modal" class="modal-backdrop hidden">
+        <div class="modal"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="warehouse-create-title">
+            <div class="modal-header">
+                <h3 id="warehouse-create-title" style="margin:0">New warehouse</h3>
+                <button class="btn btn-quiet"
+                        type="button"
+                        onclick="closeModal('warehouse-create-modal')">&times;</button>
+            </div>
+            <form action="{% url 'warehouse:create' %}" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <label>
+                        {{ form.name.label }}
+                        {{ form.name }}
+                    </label>
+                    <div class="row-3">
+                        <label>
+                            {{ form.address.label }}
+                            {{ form.address }}
+                        </label>
+                        <label>
+                            {{ form.warehouse_type.label }}
+                            {{ form.warehouse_type }}
+                        </label>
+                        <label>
+                            {{ form.state.label }}
+                            {{ form.state }}
+                        </label>
+                    </div>
+                    <div class="row-3">
+                        <label>
+                            {{ form.city.label }}
+                            {{ form.city }}
+                        </label>
+                        <label>
+                            {{ form.zip_code.label }}
+                            {{ form.zip_code }}
+                        </label>
+                        <label>
+                            {{ form.country.label }}
+                            {{ form.country }}
+                        </label>
+                    </div>
+                    <label>
+                        {{ form.notes.label }}
+                        {{ form.notes }}
+                    </label>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn"
+                            type="button"
+                            onclick="closeModal('warehouse-create-modal')">Cancel</button>
+                    <button class="btn btn-primary" type="submit">Create warehouse</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script id="warehouse-map" type="application/json">{{ warehouses_map_json|safe }}</script>
 {% endblock content %}
+{% block extra_js %}
+    <script src="{% static 'js/warehouse.js' %}" defer></script>
+{% endblock extra_js %}

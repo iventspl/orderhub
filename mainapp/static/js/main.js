@@ -1,3 +1,13 @@
+function openModal(id) {
+    document.getElementById(id).classList.remove('hidden');
+}
+
+function closeModal(id) {
+    document.getElementById(id).classList.add('hidden');
+}
+
+
+
 class AuthApp{
     #loginForm = document.getElementById('login-form')
     #loginInput = document.getElementById('login-email')
@@ -20,23 +30,3 @@ class AuthApp{
 if(window.location.href == "/api/users/login"){
     let authApp = new AuthApp()
 }
-
-
-// sidebar active state handling
-// forget it will be done via views and page
-// const navItems = document.querySelector('.nav')
-// const navItemsElements = document.querySelectorAll('.nav-link')
-
-// if(navItems){
-//     navItems.addEventListener('click', e=>{
-//         const clickedLink = e.target.closest('.nav-link');
-//         if(!clickedLink) return
-//         if(navItemsElements){
-//             navItemsElements.forEach(el=>{
-//                 el.classList.remove('active')
-//             })
-//             clickedLink.classList.add('active')
-//         }
-
-//     })
-// }

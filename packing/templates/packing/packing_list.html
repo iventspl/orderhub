@@ -1,106 +1,372 @@
 {% extends "mainapp/base.html" %}
+{% load static %}
+{% load custom_filters %}
 {% block title %}
     Packing - Organized Company
 {% endblock title %}
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/packing.css' %}">
+{% endblock extra_css %}
 {% block content %}
-    <!-- ============================================================
-             6. PACKING
-        ============================================================ -->
-    <section id="section-packing">
-        <!-- progress panel (visible when orders are selected) -->
-        <div class="card">
-            <div class="card-header">
-                <h3>Packing progress (2)</h3>
-                <button class="btn btn-sm" id="p-print">Print packing list</button>
-            </div>
-            <div class="card-body">
-                <div style="margin-bottom:10px">
-                    <div style="display:flex;justify-content:space-between">
-                        <strong>SO-2026-0142</strong>
-                        <span class="muted small">4/6</span>
+<section id="section-packing" class="section-packing">
+
+    <!-- Tab navigation -->
+    <div class="tabs">
+        <button class="tab active" data-tab="active">
+            Active
+            {% if in_progress_list or queue_list %}
+                <span class="badge" style="margin-left:4px">{% add_values in_progress_list|length queue_list|length %}</span>
+            {% endif %}
+        </button>
+        <button class="tab" data-tab="history">
+            History
+            {% if history_list %}
+                <span class="badge" style="margin-left:4px">{{ history_list|length }}</span>
+            {% endif %}
+        </button>
+    </div>
+
+    <!-- Panel: Active (queue + progress) -->
+    <div id="tab-panel-active">
+
+    <!--
+        1. PACKING PROGRESS
+        Widoczna tylko gdy są zlecenia o statusie IN_PROGRESS.
+        Każdy pasek rysuje się na podstawie quantity_scanned / quantity_required.
+        Kliknięcie "Scan items" otwiera modal skanowania (ten sam co queue).
+    -->
+    {% if in_progress_list %}
+    <div class="card">
+        <div class="card-header">
+            <h3>Packing progress ({{ in_progress_list|length }})</h3>
+        </div>
+        <div class="card-body">
+            {% for order in in_progress_list %}
+                {% with p=order.get_progress %}
+                <div class="progress-item">
+                    <div class="progress-item-header">
+                        <strong>{{ order.order.order_number|default:order.id }}</strong>
+                        <div style="display:flex;align-items:center;gap:8px">
+                            <!-- Licznik szt. odświeżany przez JS przy skanowaniu -->
+                            <span class="muted small" id="progress-label-{{ order.id }}">{{ p.scanned }}/{{ p.required }}</span>
+                            <!-- Przycisk otwiera modal skanowania – ten sam mechanizm co w queue -->
+                            <button class="order-startPacking btn btn-sm"
+                                    data-order-id="{{ order.id }}"
+                                    data-order-status="{{ order.status }}"
+                                    data-order-number="{{ order.order.order_number|default:order.id }}">
+                                Scan items
+                            </button>
+                            <!-- PDF: otwiera się w nowej karcie (target=_blank) lub pobiera -->
+                            <a href="{% url 'packing:packing_list_pdf' order.id %}"
+                               class="btn btn-sm pdf-btn"
+                               target="_blank"
+                               title="Download packing list PDF">&#x1F4C4; <span>PDF</span></a>
+                            <a href="{% url 'packing:packing_started_cancel' order.id %}" class="btn btn-sm btn-quiet">
+                                Cancel
+                            </a>
+                            <!-- Dane pozycji potrzebne modalowi JS -->
+                            <script id="items-data-{{ order.id }}" type="application/json">{{ order.get_items_to_pack_json|safe }}</script>
+                        </div>
                     </div>
-                    <div class="progress-bar">
-                        <div style="width:67%"></div>
+                    <!-- data-order-id pozwala JS odnaleźć pasek i zaktualizować go przy skanowaniu -->
+                    <!-- progress_color_class → danger/warning/info/success – patrz packing.css -->
+                    <div class="progress-bar {{ order.progress_color_class }}"
+                         data-order-id="{{ order.id }}">
+                        <div style="width:{{ p.percent }}%"></div>
                     </div>
                 </div>
-                <div style="margin-bottom:10px">
-                    <div style="display:flex;justify-content:space-between">
-                        <strong>SO-2026-0139</strong>
-                        <span class="muted small">0/4</span>
-                    </div>
-                    <div class="progress-bar">
-                        <div style="width:0%"></div>
-                    </div>
-                </div>
-            </div>
+                {% endwith %}
+            {% endfor %}
         </div>
-        <!-- packing queue -->
-        <div class="card">
-            <div class="card-header">
-                <h3>Packing queue</h3>
-            </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th></th>
-                        <th>Order</th>
-                        <th>Customer</th>
-                        <th>Items</th>
-                        <th>Status</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>
-                            <input type="checkbox" checked />
-                        </td>
-                        <td>
-                            <strong>SO-2026-0142</strong>
-                        </td>
-                        <td>Nord Lens Group</td>
-                        <td>6 units</td>
-                        <td>
-                            <span class="badge warehouse">In warehouse</span>
-                        </td>
-                        <td>
-                            <button class="btn btn-sm btn-primary">Start packing</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <input type="checkbox" />
-                        </td>
-                        <td>
-                            <strong>SO-2026-0141</strong>
-                        </td>
-                        <td>Brillen Partner</td>
-                        <td>4 units</td>
-                        <td>
-                            <span class="badge packed">Packed</span>
-                        </td>
-                        <td>
-                            <button class="btn btn-sm btn-primary">Start packing</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <input type="checkbox" checked />
-                        </td>
-                        <td>
-                            <strong>SO-2026-0139</strong>
-                        </td>
-                        <td>Vision Markt</td>
-                        <td>4 units</td>
-                        <td>
-                            <span class="badge warehouse">In warehouse</span>
-                        </td>
-                        <td>
-                            <button class="btn btn-sm btn-primary">Start packing</button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+    </div>
+    {% endif %}
+
+    <!--
+        2. READY TO SHIP
+        Zamówienia ze statusem PACKED – spakowane, czekają na nadanie.
+        Przycisk "Ship order" otwiera modal z polami carrier + tracking.
+        data-order-status="packed" → JS resolveAction → action='ship' → showShippingControls=true
+    -->
+    {% if packed_list %}
+    <div class="card">
+        <div class="card-header">
+            <h3>Ready to ship ({{ packed_list|length }})</h3>
         </div>
-    </section>
+        <table>
+            <thead>
+                <tr>
+                    <th>Order</th>
+                    <th>Customer</th>
+                    <th>Items</th>
+                    <th></th>
+                    <th style="width:100px"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in packed_list %}
+                <tr class="clickable" data-order-id="{{ order.id }}">
+                    <td><strong>{{ order.order.order_number|default:order.id }}</strong></td>
+                    <td>{{ order.order.customer }}</td>
+                    <td>{{ order.items_to_pack.count }} items</td>
+                    <td>
+                        <button class="order-startPacking btn btn-sm btn-primary"
+                                data-order-id="{{ order.id }}"
+                                data-order-status="{{ order.status }}"
+                                data-order-number="{{ order.order.order_number|default:order.id }}">
+                            Ship order
+                        </button>
+                        <script id="items-data-{{ order.id }}" type="application/json">{{ order.get_items_to_pack_json|safe }}</script>
+                    </td>
+                    <td>
+                        <a href="{% url 'packing:packing_list_pdf' order.id %}"
+                           class="btn btn-sm pdf-btn"
+                           target="_blank">&#x1F4C4; <span></span>PDF</span></a>
+                    </td>
+                </tr>
+                <!-- expanded row  -->
+                <tr class="expand-row" data-order-id="{{ order.id }}">
+                    <td colspan="7">
+                        <dl class="kv">
+                            <dt>Owner</dt>
+                            <dd>
+                                {{ order.order.customer.get_full_name|default:order.order.customer }}
+                            </dd>
+                            <dt>Shipping Address</dt>
+                            <dd>
+                                {{ order.order.ship_address }}
+                            </dd>
+                            <dt>Items</dt>
+                            <dd>
+                                {% for item in order.order.salesorderitem_set.all %}
+                                    <span>{{ item.resolved_name }} [x{{ item.quantity }}]
+                                        {% if not forloop.last %},{% endif %}
+                                    </span>
+                                {% endfor %}
+                            </dd>
+                            <dt>Tracking</dt>
+                            <dd>
+                                {% if order.order.tracking %}
+                                    {{ order.order.tracking.tracking_number }} <span class="muted">({{ order.order.tracking.carrier }})</span>
+                                {% else %}
+                                    no tracking number
+                                {% endif %}
+                            </dd>
+                            <dt>Notes</dt>
+                            <dd>
+                                {{ order.notes|default:"-" }}
+                            </dd>
+                        </dl>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="muted" style="text-align:center;padding:24px">
+                        No orders ready to ship.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!--
+        4. BATCH ACTION BAR
+        Pojawia się gdy user zaznacza ≥1 checkbox w kolejce.
+        Sticky na dole – zawsze widoczna przy przewijaniu.
+        JS obsługuje: _updateBatchBar(), _startPacking(ids).
+    -->
+    <div id="packing-batch-bar" class="batch-bar hidden">
+        <span id="packing-batch-count" class="muted small">0 selected</span>
+        <button id="packing-start-btn" class="btn btn-sm btn-primary" disabled>
+            ▶ Start packing
+        </button>
+    </div>
+
+    <!--
+        5. PACKING QUEUE
+        Tylko zlecenia PENDING. User zaznacza checkboxy → batch bar →
+        "Start packing" → POST /packing/start/ → reload →
+        zlecenia przechodzą do sekcji Packing Progress powyżej.
+    -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Packing queue</h3>
+            <label class="select-all-label">
+                <!-- Zaznacza/odznacza wszystkie checkboxy w kolejce -->
+                <input type="checkbox" id="packing-select-all" />
+                <span class="muted small">Select all</span>
+            </label>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:40px"></th>
+                    <th>Order</th>
+                    <th>Customer</th>
+                    <th>Items</th>
+                    <th>Status</th>
+                    <th></th>
+                    <th style="width:100px"></th>
+                </tr>
+            </thead>
+            <tbody id="packingTable">
+                {% for order in queue_list %}
+                <tr class="packing-row clickable" data-order-id="{{ order.id }}">
+                    <td>
+                        <!-- data-id to PackingOrder.pk wysyłany do /packing/start/ -->
+                        <input type="checkbox"
+                               class="packing-checkbox"
+                               data-id="{{ order.id }}" />
+                    </td>
+                    <td><strong>{{ order.order.order_number|default:order.id }}</strong></td>
+                    <td>{{ order.order.customer }}</td>
+                    <td>{{ order.items_to_pack.count }} items</td>
+                    <td>
+                        <span class="badge pending">{{ order.get_status_display }}</span>
+                    </td>
+                    <td>
+                        <!-- Ten sam mechanizm co w progress – otwiera modal skanowania -->
+                        <button class="order-startPacking btn btn-sm btn-primary"
+                                data-order-id="{{ order.id }}"
+                                data-order-status="{{ order.status }}"
+                                data-order-number="{{ order.order.order_number|default:order.id }}">
+                            Start packing
+                        </button>
+                        <script id="items-data-{{ order.id }}" type="application/json">{{ order.get_items_to_pack_json|safe }}</script>
+                    </td>
+                    <td>
+                        <a href="{% url 'packing:packing_list_pdf' order.id %}"
+                           class="btn btn-sm pdf-btn"
+                           target="_blank">&#x1F4C4; <span>PDF</span></a>
+                    </td>
+                </tr>
+                <!-- expanded row  -->
+                <tr class="expand-row" data-order-id="{{ order.id }}">
+                    <td colspan="7">
+                        <dl class="kv">
+                            <dt>Owner</dt>
+                            <dd>
+                                {{ order.order.customer.get_full_name|default:order.order.customer }}
+                            </dd>
+                            <dt>Shipping Address</dt>
+                            <dd>
+                                {{ order.order.ship_address }}
+                            </dd>
+                            <dt>Items</dt>
+                            <dd>
+                                {% for item in order.order.salesorderitem_set.all %}
+                                    <span>{{ item.resolved_name }} [x{{ item.quantity }}]
+                                        {% if not forloop.last %},{% endif %}
+                                    </span>
+                                {% endfor %}
+                            </dd>
+                            <dt>Tracking</dt>
+                            <dd>
+                                {% if order.order.tracking %}
+                                    {{ order.order.tracking.tracking_number }} <span class="muted">({{ order.order.tracking.carrier }})</span>
+                                {% else %}
+                                    no tracking number
+                                {% endif %}
+                            </dd>
+                            <dt>Notes</dt>
+                            <dd>
+                                {{ order.notes|default:"-" }}
+                            </dd>
+                        </dl>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="muted" style="text-align:center;padding:24px">
+                        Queue is empty.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    </div><!-- /#tab-panel-active -->
+
+    <!-- Panel: History (packed + shipped) -->
+    <div id="tab-panel-history" style="display:none">
+    <div class="card">
+        <div class="card-header">
+            <h3>History</h3>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Order</th>
+                    <th>Customer</th>
+                    <th>Items</th>
+                    <th>Packed by</th>
+                    <th>Packed on</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in history_list %}
+                <tr class="clickable" data-order-id="{{ order.id }}">
+                    <td><strong>{{ order.order.order_number|default:order.id }}</strong></td>
+                    <td>{{ order.order.customer }}</td>
+                    <td>{{ order.items_to_pack.count }} items</td>
+                    <td>{{ order.packed_by|default:"-" }}</td>
+                    <td>{{ order.packed_on|date:"d M Y H:i"|default:"-" }}</td>
+                    <td>
+                        <span class="badge {{ order.status }}">{{ order.get_status_display }}</span>
+                    </td>
+                </tr>
+                <!-- expanded row  -->
+                <tr class="expand-row" data-order-id="{{ order.id }}">
+                    <td colspan="7">
+                        <dl class="kv">
+                            <dt>Owner</dt>
+                            <dd>
+                                {{ order.order.customer.get_full_name|default:order.order.customer }}
+                            </dd>
+                            <dt>Shipping Address</dt>
+                            <dd>
+                                {{ order.order.ship_address }}
+                            </dd>
+                            <dt>Items</dt>
+                            <dd>
+                                {% for item in order.order.salesorderitem_set.all %}
+                                    <span>{{ item.resolved_name }} [x{{ item.quantity }}]
+                                        {% if not forloop.last %},{% endif %}
+                                    </span>
+                                {% endfor %}
+                            </dd>
+                            <dt>Tracking</dt>
+                            <dd>
+                                {% if order.order.tracking %}
+                                    {{ order.order.tracking.tracking_number }} <span class="muted">({{ order.order.tracking.carrier }})</span>
+                                {% else %}
+                                    no tracking number
+                                {% endif %}
+                            </dd>
+                            <dt>Notes</dt>
+                            <dd>
+                                {{ order.notes|default:"-" }}
+                            </dd>
+                        </dl>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="muted" style="text-align:center;padding:24px">
+                        No history yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    </div><!-- /#tab-panel-history -->
+
+</section>
 {% endblock content %}
+{% block extra_js %}
+    <script src="{% static 'js/packing.js' %}" defer></script>
+{% endblock extra_js %}

@@ -1,0 +1,568 @@
+<style>
+  :root {
+    --bg: #f5f7fb;
+    --card: #ffffff;
+    --surface: #f8fafc;
+    --surface-strong: #f1f5f9;
+    --text: #0f172a;
+    --muted: #64748b;
+    --line: #dbe4ee;
+    --brand: #0f766e;
+    --brand-soft: #ccfbf1;
+    --online: #10b981;
+    --away: #f59e0b;
+    --offline: #94a3b8;
+    --danger: #ef4444;
+    --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  }
+
+  .staff-wrap,
+  .staff-wrap * {
+    box-sizing: border-box;
+  }
+
+  .staff-wrap {
+    margin-top: 1.25rem;
+    border: 1px solid var(--line);
+    background: var(--card);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    padding: 1.25rem;
+    color: var(--text);
+    font-family: "Segoe UI", "Noto Sans", sans-serif;
+  }
+
+  .staff-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  .staff-subtitle {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .staff-title {
+    margin: 0.2rem 0;
+    font-size: 1.35rem;
+  }
+
+  .staff-note {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+
+  .company-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: #f0fdfa;
+    padding: 0.35rem 0.7rem;
+    font-size: 0.85rem;
+    margin-right: 0.5rem;
+  }
+
+  .updates {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface-strong);
+    padding: 0.8rem;
+    margin-bottom: 1rem;
+  }
+
+  .updates-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--muted);
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .link-btn {
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.72rem;
+  }
+
+  .link-btn:hover {
+    color: var(--text);
+  }
+
+  .updates-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.4rem;
+  }
+
+  .updates-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    display: inline-block;
+    margin-right: 0.4rem;
+    vertical-align: middle;
+  }
+
+  .dot.online { background: var(--online); }
+  .dot.away { background: var(--away); }
+  .dot.offline { background: var(--offline); }
+
+  .muted { color: var(--muted); }
+
+  .toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+
+  .chip {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--muted);
+    padding: 0.3rem 0.7rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .chip.active {
+    border-color: var(--brand);
+    color: var(--brand);
+    background: var(--brand-soft);
+  }
+
+  .search {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 0.55rem 0.75rem;
+    min-width: 260px;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 1rem;
+  }
+
+  .panel {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--card);
+  }
+
+  .panel-head {
+    border-bottom: 1px solid var(--line);
+    background: var(--surface-strong);
+    padding: 0.7rem 0.9rem;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 700;
+  }
+
+  .member-item {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    width: 100%;
+    border: 0;
+    border-left: 4px solid transparent;
+    padding: 0.75rem 0.9rem;
+    text-align: left;
+    background: #fff;
+    cursor: pointer;
+  }
+
+  .member-item + .member-item {
+    border-top: 1px solid var(--line);
+  }
+
+  .member-item.active {
+    border-left-color: var(--brand);
+    background: #f0fdfa;
+  }
+
+  .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    font-weight: 700;
+    background: #e2e8f0;
+    position: relative;
+    flex: 0 0 auto;
+  }
+
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    border: 2px solid #fff;
+    position: absolute;
+    right: -1px;
+    bottom: -1px;
+  }
+
+  .status-dot.online { background: var(--online); }
+  .status-dot.away { background: var(--away); }
+  .status-dot.offline { background: var(--offline); }
+
+  .badge-red {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 18px;
+    padding: 0 5px;
+    height: 16px;
+    border-radius: 999px;
+    font-size: 10px;
+    color: #fff;
+    background: var(--danger);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .member-main {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .member-name {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+
+  .member-role {
+    margin: 0.1rem 0 0;
+    font-size: 0.76rem;
+    color: var(--muted);
+  }
+
+  .member-state {
+    text-align: right;
+    font-size: 0.74rem;
+    color: var(--muted);
+  }
+
+  .side {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    padding: 0.9rem;
+    display: grid;
+    gap: 0.8rem;
+  }
+
+  .contact {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 0.65rem;
+    background: #fff;
+    font-size: 0.88rem;
+    display: grid;
+    gap: 0.4rem;
+  }
+
+  .contact a {
+    color: #0f766e;
+    text-decoration: none;
+  }
+
+  .contact a:hover {
+    text-decoration: underline;
+  }
+
+  .history {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  .history-head {
+    border-bottom: 1px solid var(--line);
+    padding: 0.6rem;
+    display: flex;
+    justify-content: space-between;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+
+  .history-title {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 700;
+  }
+
+  .history-list {
+    max-height: 280px;
+    overflow-y: auto;
+    padding: 0.6rem;
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .msg {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+    padding: 0.55rem;
+    font-size: 0.83rem;
+  }
+
+  .msg-head {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-bottom: 0.25rem;
+  }
+
+  .composer {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+    overflow: hidden;
+  }
+
+  .composer h5 {
+    margin: 0;
+    padding: 0.6rem;
+    border-bottom: 1px solid var(--line);
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  .composer form {
+    display: grid;
+    gap: 0.5rem;
+    padding: 0.6rem;
+  }
+
+  .composer input,
+  .composer textarea {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 0.55rem 0.65rem;
+    font-size: 0.85rem;
+  }
+
+  .btn {
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 8px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.76rem;
+    cursor: pointer;
+  }
+
+  .btn-primary {
+    border-color: var(--brand);
+    color: #fff;
+    background: var(--brand);
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 980px) {
+    .layout {
+      grid-template-columns: 1fr;
+    }
+
+    .search {
+      width: 100%;
+      min-width: 0;
+    }
+  }
+</style>
+
+<section class="staff-wrap">
+  <div class="staff-header">
+    <div>
+      <p class="staff-subtitle">Staff</p>
+      <h3 class="staff-title">Coworkers at OrderHub Poland</h3>
+      <p class="staff-note">List is automatically filtered to your company. Reach colleagues by chat or email and search the full history.</p>
+    </div>
+    <div class="staff-note">
+      <span class="company-pill">OrderHub Poland</span>
+      <span>9 people</span>
+    </div>
+  </div>
+
+  <div class="updates">
+    <div class="updates-head">
+      <span>Presence updates</span>
+      <button type="button" class="link-btn">Clear</button>
+    </div>
+    <ul class="updates-list">
+      <li><span><span class="dot online"></span><strong>Ewa Dabrowska</strong> <span class="muted">Away -> Online</span></span><span class="muted">07:02</span></li>
+      <li><span><span class="dot offline"></span><strong>Karolina Zielinska</strong> <span class="muted">Online -> Offline</span></span><span class="muted">07:42</span></li>
+      <li><span><span class="dot away"></span><strong>Ewa Dabrowska</strong> <span class="muted">Offline -> Away</span></span><span class="muted">07:00</span></li>
+      <li><span><span class="dot offline"></span><strong>Julia Wisniewska</strong> <span class="muted">Away -> Offline</span></span><span class="muted">07:01</span></li>
+    </ul>
+  </div>
+
+  <div class="toolbar">
+    <div class="chips">
+      <button class="chip active" type="button">All</button>
+      <button class="chip" type="button">Sales</button>
+      <button class="chip" type="button">Warehouse</button>
+      <button class="chip" type="button">Packing</button>
+      <button class="chip" type="button">Tracking</button>
+      <button class="chip" type="button">Support</button>
+      <button class="chip" type="button">Operations</button>
+      <button class="chip" type="button">Management</button>
+    </div>
+    <input class="search" placeholder="Search by name, role, email" />
+  </div>
+
+  <div class="layout">
+    <div class="panel">
+      <div class="panel-head">Team members · OrderHub Poland</div>
+
+      <button class="member-item active" type="button">
+        <span class="avatar">AK<span class="status-dot offline"></span></span>
+        <span class="member-main">
+          <p class="member-name">Anna Kowalska</p>
+          <p class="member-role">Sales lead · Sales</p>
+        </span>
+        <span class="member-state">Offline<br />active now</span>
+      </button>
+
+      <button class="member-item" type="button">
+        <span class="avatar">MN<span class="status-dot online"></span><span class="badge-red">2</span></span>
+        <span class="member-main">
+          <p class="member-name">Marek Nowak</p>
+          <p class="member-role">Warehouse manager · Warehouse</p>
+        </span>
+        <span class="member-state">Online<br />active now</span>
+      </button>
+
+      <button class="member-item" type="button">
+        <span class="avatar">JW<span class="status-dot offline"></span></span>
+        <span class="member-main">
+          <p class="member-name">Julia Wisniewska</p>
+          <p class="member-role">Packing supervisor · Packing</p>
+        </span>
+        <span class="member-state">Offline<br />6 d ago</span>
+      </button>
+
+      <button class="member-item" type="button">
+        <span class="avatar">TL<span class="status-dot online"></span><span class="badge-red">1</span></span>
+        <span class="member-main">
+          <p class="member-name">Tomasz Lewandowski</p>
+          <p class="member-role">Tracking specialist · Tracking</p>
+        </span>
+        <span class="member-state">Online<br />active now</span>
+      </button>
+
+      <button class="member-item" type="button">
+        <span class="avatar">ED<span class="status-dot online"></span><span class="badge-red">1</span></span>
+        <span class="member-main">
+          <p class="member-name">Ewa Dabrowska</p>
+          <p class="member-role">Country manager · Management</p>
+        </span>
+        <span class="member-state">Online<br />active now</span>
+      </button>
+    </div>
+
+    <aside class="side">
+      <div>
+        <p class="member-name" style="margin-bottom: 0.15rem;">Anna Kowalska</p>
+        <p class="member-role">Sales lead · Sales</p>
+        <p class="member-role">Offline · last seen active now · Warsaw HQ</p>
+      </div>
+
+      <div class="contact">
+        <a href="mailto:anna.kowalska@orderhub.co">anna.kowalska@orderhub.co</a>
+        <a href="tel:+48600110220">+48 600 110 220</a>
+      </div>
+
+      <div class="history">
+        <div class="history-head">
+          <span class="history-title">Conversation history</span>
+          <input class="search" style="padding: 0.35rem 0.55rem; min-width: 220px;" placeholder="Search e.g. quote Q-7781" />
+        </div>
+        <div class="history-list">
+          <article class="msg">
+            <div class="msg-head"><span>Chat · You</span><span>26 cze, 04:47</span></div>
+            <p>Sure, I will send a revised pricing sheet today.</p>
+          </article>
+          <article class="msg">
+            <div class="msg-head"><span>Chat · Anna</span><span>26 cze, 03:47</span></div>
+            <p>Hi! Let me know if you need pricing on the latest quote.</p>
+          </article>
+          <article class="msg">
+            <div class="msg-head"><span>Email · Sent</span><span>25 cze, 06:47</span></div>
+            <p><strong>Re: Quote Q-7781 follow-up</strong></p>
+            <p>Confirmed on our side, please proceed.</p>
+          </article>
+          <article class="msg">
+            <div class="msg-head"><span>Email · Received</span><span>25 cze, 04:47</span></div>
+            <p><strong>Quote Q-7781 follow-up</strong></p>
+            <p>Hi, do we have approval on Q-7781? The customer is waiting on confirmation.</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="composer">
+        <h5>Chat</h5>
+        <form>
+          <input placeholder="Message Anna" />
+          <button class="btn btn-primary" type="submit" disabled>Send</button>
+        </form>
+      </div>
+
+      <div class="composer">
+        <h5>Email</h5>
+        <form>
+          <input placeholder="Subject" />
+          <textarea rows="3" placeholder="Write to Anna Kowalska..."></textarea>
+          <button class="btn btn-primary" type="submit" disabled>Send email</button>
+        </form>
+      </div>
+    </aside>
+  </div>
+</section>

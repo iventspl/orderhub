@@ -1,217 +1,435 @@
 {% extends "mainapp/base.html" %}
+{% load static %}
+{% load sales_tags %}
 {% block title %}
     Sales - Organized Company
 {% endblock title %}
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/sales.css' %}">
+{% endblock extra_css %}
 {% block content %}
-    <!-- ============================================================
-             4. SALES
-        ============================================================ -->
-    <section id="section-sales">
-        <div class="card">
-            <div class="card-header">
-                <h3>Sales orders</h3>
-                <div class="toolbar">
-                    <input id="o-search" type="text" placeholder="Search order, customer, city…" />
-                    <select id="o-status">
-                        <option>All</option>
-                        <option>Draft</option>
-                        <option>In warehouse</option>
-                        <option>Packed</option>
-                        <option>Shipped</option>
-                        <option>Delivered</option>
-                    </select>
-                    <select id="o-payment">
-                        <option>All</option>
-                        <option>Net 14</option>
-                        <option>Prepaid</option>
-                        <option>Net 30</option>
-                        <option>On delivery</option>
-                        <option>Paid</option>
-                    </select>
-                    <input id="o-from" type="date" title="From" />
-                    <input id="o-to" type="date" title="To" />
-                    <select id="o-sort">
-                        <option value="orderDate">Date</option>
-                        <option value="id">Order #</option>
-                        <option value="customer">Customer</option>
-                        <option value="value">Value</option>
-                        <option value="status">Status</option>
-                    </select>
-                    <button class="btn btn-sm" id="o-dir">↓</button>
-                    <button class="btn btn-primary btn-sm" id="o-new">+ New order</button>
+<section class="orders-workspace">
+
+  <div class="workspace-header">
+    <div class="workspace-title">
+      <small>Sales</small>
+      <h3>Order Workspace</h3>
+    </div>
+
+    <button class="btn-primary" id="new_order" onclick="openModal('order-modal')">+ New Order</button>
+  </div>
+
+  <div class="orders-container">
+        <div class="orders-toolbar">
+            <div class="toolbar-col">
+                <div class="toolbar-row">
+                    <input class="search-input" name="search" id="o-search" type="text" placeholder="Search order, customer, city…" />
                 </div>
-            </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Order</th>
-                        <th>Value</th>
-                        <th>Customer</th>
-                        <th>City</th>
-                        <th>Status</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr class="clickable">
-                        <td>
-                            <strong>SO-2026-0142</strong>
-                            <div class="muted small">2026-04-30</div>
-                        </td>
-                        <td>€960.00</td>
-                        <td>Nord Lens Group</td>
-                        <td>Berlin</td>
-                        <td>
-                            <select class="status-select">
-                                <option>Draft</option>
-                                <option selected>In warehouse</option>
-                                <option>Packed</option>
-                                <option>Shipped</option>
-                                <option>Delivered</option>
-                                <option>Paid</option>
-                            </select>
-                        </td>
-                        <td>
-                            <span class="badge warehouse">In warehouse</span>
-                        </td>
-                    </tr>
-                    <tr class="clickable">
-                        <td>
-                            <strong>SO-2026-0141</strong>
-                            <div class="muted small">2026-04-29</div>
-                        </td>
-                        <td>€1,145.00</td>
-                        <td>Brillen Partner</td>
-                        <td>Prague</td>
-                        <td>
-                            <select class="status-select">
-                                <option selected>Draft</option>
-                                <option>In warehouse</option>
-                                <option>Packed</option>
-                                <option>Shipped</option>
-                                <option>Delivered</option>
-                                <option>Paid</option>
-                            </select>
-                        </td>
-                        <td>
-                            <span class="badge draft">Draft</span>
-                        </td>
-                    </tr>
-                    <!-- expanded row example -->
-                    <tr class="clickable expanded">
-                        <td>
-                            <strong>SO-2026-0140</strong>
-                            <div class="muted small">2026-04-28</div>
-                        </td>
-                        <td>€1,330.00</td>
-                        <td>Optic House</td>
-                        <td>Vienna</td>
-                        <td>
-                            <select class="status-select">
-                                <option>Draft</option>
-                                <option>In warehouse</option>
-                                <option>Packed</option>
-                                <option selected>Shipped</option>
-                                <option>Delivered</option>
-                                <option>Paid</option>
-                            </select>
-                        </td>
-                        <td>
-                            <span class="badge shipped">Shipped</span>
-                        </td>
-                    </tr>
-                    <tr class="expand-row">
-                        <td colspan="6">
-                            <dl class="kv">
-                                <dt>Owner</dt>
-                                <dd>
-                                    Marek
-                                </dd>
-                                <dt>Payment</dt>
-                                <dd>
-                                    Net 14
-                                </dd>
-                                <dt>Address</dt>
-                                <dd>
-                                    Lindenallee 12, Vienna
-                                </dd>
-                                <dt>Items</dt>
-                                <dd>
-                                    Lens kits (LEN-0102) × 6
-                                </dd>
-                                <dt>Tracking</dt>
-                                <dd>
-                                    TRK-1002 <span class="muted">(DHL)</span>
-                                </dd>
-                                <dt>Notes</dt>
-                                <dd>
-                                    Standard handling.
-                                </dd>
-                            </dl>
-                        </td>
-                    </tr>
-                    <tr class="clickable">
-                        <td>
-                            <strong>SO-2026-0139</strong>
-                            <div class="muted small">2026-04-27</div>
-                        </td>
-                        <td>€1,515.00</td>
-                        <td>Vision Markt</td>
-                        <td>Munich</td>
-                        <td>
-                            <select class="status-select">
-                                <option>Draft</option>
-                                <option>In warehouse</option>
-                                <option selected>Packed</option>
-                                <option>Shipped</option>
-                                <option>Delivered</option>
-                                <option>Paid</option>
-                            </select>
-                        </td>
-                        <td>
-                            <span class="badge packed">Packed</span>
-                        </td>
-                    </tr>
-                    <tr class="clickable">
-                        <td>
-                            <strong>SO-2026-0138</strong>
-                            <div class="muted small">2026-04-26</div>
-                        </td>
-                        <td>€1,700.00</td>
-                        <td>ClearView Retail</td>
-                        <td>Hamburg</td>
-                        <td>
-                            <select class="status-select">
-                                <option>Draft</option>
-                                <option>In warehouse</option>
-                                <option>Packed</option>
-                                <option>Shipped</option>
-                                <option selected>Delivered</option>
-                                <option>Paid</option>
-                            </select>
-                        </td>
-                        <td>
-                            <span class="badge delivered">Delivered</span>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-            <div class="pagination">
-                <span>Showing 1–10 of 48</span>
-                <div class="right">
+                <div class="controls">
                     <label>
-                        Rows
-                        <select>
-                            <option selected>10</option>
-                            <option>25</option>
-                            <option>50</option>
+                    Payment
+                        <select name="filter_payment" id="o-payment">
+                            <option value="all">All</option>
+                            <option value="net_14">Net 14</option>
+                            <option value="prepaid">Prepaid</option>
+                            <option value="net_30">Net 30</option>
+                            <option value="on_delivery">On delivery</option>
+                            <option value="paid">Paid</option>
                         </select>
                     </label>
-                    <button class="btn btn-sm" disabled>Prev</button>
-                    <span>1 / 5</span>
-                    <button class="btn btn-sm">Next</button>
+
+                    <label>
+                    Sort by
+                    <select name="sort_by" id="o-sort">
+                            <option value="created_on">Date</option>
+                            <option value="order_number">Order #</option>
+                            <option value="customer">Customer</option>
+                            <option value="value">Value</option>
+                            <option value="status">Status</option>
+                        </select>
+                    </label>
+
+                    <button class="btn btn-sm" id="o-dir" data-dir="asc">↓</button>
+
+                </div>
+
+                <div class="controls">
+                    <label>
+                    Order date from
+                    <input type="date">
+                    </label>
+
+                    <label>
+                    To
+                    <input type="date">
+                    </label>
+                </div>
+
+                <button class="btn" id="reset-filters">Reset</button>
+            </div>
+            <div class="toolbar-row">
+                <div class="filters" role="group" aria-label="Filter orders by status">
+                    {% for filter_value, filter_label in status_filters %}
+                        <button class="filter-btn{% if status_filter == filter_value %} active{% endif %}"
+                                        type="button"
+                                        data-filter-status="{{ filter_value }}">
+                            {{ filter_label }}
+                        </button>
+                    {% endfor %}
                 </div>
             </div>
+
+            
+
+    </div>
+    <div class="orders-header order-row">
+        <div class="orders-header-col">Order # / Date</div>
+        <div class="orders-header-col">Customer</div>
+        <div class="orders-header-col">Tracking</div>
+        <div class="orders-header-col">Value</div>
+        <div class="orders-header-col">Status</div>
+    </div>
+    {% for order in page_obj %}
+        <!-- Order row -->
+        <div class="order-row clickable" data-id="{{ order.id }}">
+            <div class="order-col">
+                <div class="order-number">{{ order.order_number }}</div>
+                <div class="order-date">{{ order.created_on|date:"Y-m-d" }}</div>
+            </div>
+
+            <div class="order-col">
+                <div class="customer-name">{{ order.customer.get_full_name }}</div>
+                <div class="customer-location">{{ order.customer.city }}</div>
+            </div>
+
+            <div class="order-col">
+                {% if order.tracking %}
+                    <div class="order-carrier">{{ order.tracking.carrier }}</div>
+                    <div class="order-tracking">{{ order.tracking.tracking_number }}</div>
+                {% else %}
+                    <div class="order-carrier">No tracking</div>
+                {% endif %}
+            </div>
+
+            <div class="order-col">
+                <div class="order-value">€{{ order.value }}</div>
+            </div>
+
+            <div class="order-col">
+                <div class="order-status">{{ order.status }}</div>
+            </div>
         </div>
-    </section>
+        <!-- Expanded order details -->
+        <div class="order-panel expand-row" data-id="{{ order.id }}">
+            <div class="order-card">
+                <div class="order-header">
+                    <div>
+                        <p class="muted">Order details</p>
+                        <h4 class="order-title">{{ order.order_number }}</h4>
+                    </div>
+
+                    <span class="status-badge">{{ order.status }}</span>
+                </div>
+
+                <div class="details-grid">
+                    <div>
+                        <p class="muted">Customer</p>
+                        <p class="value">{{ order.customer.get_full_name }} </p>
+                    </div>
+
+                    <div>
+                        <p class="muted">Sales person</p>
+                        <p class="value">{{ order.created_by.get_full_name }} <span class="muted">({{ order.created_by.profile.email }})</span></p>
+                    </div>
+
+                    <div>
+                        <p class="muted">Due date</p>
+                        <p class="value">{{ order.due_date }}</p>
+                    </div>
+
+                    <div>
+                        <p class="muted">Payment</p>
+                        <p class="value">{{ order.get_payment_method_display }}</p>
+                    </div>
+
+                    <div>
+                        <p class="muted">Delivery address</p>
+                        <p class="value">{{ order.ship_address }}</p>
+                    </div>
+
+                    <div>
+                        <p class="muted">Items</p>
+                        {% for item in order.salesorderitem_set.all %}
+                            <span>{{ item.resolved_name }} [x{{ item.quantity }}]
+                                {% if not forloop.last %},{% endif %}
+                            </span>
+                        {% endfor %}
+                    </div>
+
+                    <div>
+                        <p class="muted">Tracking</p>
+                        {% if order.tracking %}
+                            <p class="value">{{ order.tracking.tracking_number }} <span class="muted">({{ order.tracking.carrier }})</span></p>
+                        {% else %}
+                            <p class="value">no tracking number</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="full-width">
+                        <p class="muted">Notes</p>
+                        <p class="value">{{ order.notes }}</p>
+                    </div>
+
+                    <div class="full-width">
+                        <p class="muted">Activity timeline</p>
+                        {% get_logger_entries_for_order order as logger_entries %}
+                            {% if logger_entries %}
+                                <div class="activity-timeline">
+                                    {% for log in logger_entries %}
+                                        <div class="info-box activity-entry">
+                                            <span class="timestamp">{{ log.timestamp|date:"Y-m-d H:i" }}</span>:
+                                            <span class="action">{{ log.action }}</span>
+                                            <span class="user">by {{ log.user.get_full_name }} ({{ log.user.profile.email }})</span>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="info-box">
+                                No status changes recorded yet.
+                                </div>
+                            {% endif %}
+                    </div>
+
+                    <div class="full-width">
+                        <div class="section-title">
+                        <span>🕒</span>
+                        <span>Version history</span>
+                        </div>
+
+                        <div class="info-box">
+                        No previous edit snapshots yet.
+                        </div>
+                    </div>
+
+                    <div class="actions full-width">
+                        <button class="btn edit-btn" data-order-id="{{ order.id }}"
+                                            data-order-status="{{ order.status }}"
+                                            data-order-number="{{ order.order_number|default:order.id }}"
+                                            data-customer="{{ order.customer.get_full_name }}"
+                                            data-payment="{{ order.get_payment_method_display }}"
+                                            data-notes="{{ order.notes }}"
+                                            data-is-editable="{% if order.status == 'DELIVERED' %}False{% else %}True{% endif %}">Edit order</button>
+                        <button class="btn">Approve</button>
+                        <button class="btn">Mark Packed</button>
+                        <button class="btn">Assign Courier</button>
+                        <button class="btn btn-primary">Deliver</button>
+                    </div>
+                </div>
+            </div>
+</div>
+
+    {% endfor %}
+
+    <div class="pagination">
+        <span>Showing 1–{{ no_rows }} of {{ sales_orders.count }}</span>
+
+      <div class="pagination-controls">
+        <label>
+          Show
+            <select name="no_rows" class="pagination-rows">
+                <option value="10" {% if no_rows == '10' %}selected{% endif %}>10</option>
+                <option value="25" {% if no_rows == '25' %}selected{% endif %}>25</option>
+                <option value="50" {% if no_rows == '50' %}selected{% endif %}>50</option>
+            </select>
+        </label>
+
+        {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}&rows={{ no_rows }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}{% if sort_dir %}&sort_dir={{ sort_dir }}{% endif %}"
+                           class="btn btn-sm">Prev</a>
+                    {% endif %}
+                    <span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}&rows={{ no_rows }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}{% if sort_dir %}&sort_dir={{ sort_dir }}{% endif %}"
+                           class="btn btn-sm">Next</a>
+                    {% endif %}
+      </div>
+    </div>
+
+  </div>
+</section>
+    <!-- ============================================================
+        MODAL — New order
+============================================================ -->
+    <div id="order-modal" class="modal-backdrop hidden">
+        <div class="modal" role="dialog">
+            <div class="modal-header">
+                <h3 style="margin:0">New order</h3>
+                <button class="btn btn-quiet"
+                        type="button"
+                        onclick="closeModal('order-modal')">&times;</button>
+            </div>
+            <form method="post" action="{% url 'sales:sales_list' %}">
+                {% csrf_token %}
+                {{ formset.management_form }}
+                {{ formset.0.id }}
+                <div class="modal-body">
+                    <label class="modal-checkbox">
+                        <input name="is_new_customer" type="checkbox" onclick="toggleCustomerForm()" />
+                        New customer
+                    </label>
+                    <div class="modal-new-customer">
+                        <div class="row">
+                            <label>
+                                First Name
+                                <input name="customer_first_name" data-nc="firstName" />
+                            </label>
+                            <label>
+                                Last Name
+                                <input name="customer_last_name" data-nc="lastName" />
+                            </label>
+                        </div>
+                        <div class="row">
+                            <label>
+                                Email
+                                <input name="customer_email" data-nc="email" />
+                            </label>
+                            <label>
+                                Phone
+                                <input name="customer_phone" data-nc="phone" />
+                            </label>
+                        </div>
+                        <div class="row-3">
+                            <label>
+                                Address
+                                <input name="customer_address" data-nc="address" />
+                            </label>
+                            <label>
+                                Zip code
+                                <input name="customer_zip_code" data-nc="zipCode" />
+                            </label>
+                            <label>
+                                City
+                                <input name="customer_city" data-nc="city" />
+                            </label>
+                        </div>
+                        <div class="row">
+                            <label>
+                                State
+                                <input name="customer_state" data-nc="state" />
+                            </label>
+                            <label>
+                                Country
+                                <input name="customer_country" data-nc="country" />
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-customer">
+                        <label>
+                            {{ form.customer.label }}
+                            {{ form.customer }}
+                        </label>
+                    </div>
+                    <div class="search_product">
+                        <input type="text" id="search_product" placeholder="Search product…" />
+                        <div class="search_results">
+
+                        </div>
+                    </div>
+                    <div id="order-items">
+                        {% for item_form in formset %}
+                            <div class="order-item-row row">
+                                <label>
+                                    {{ item_form.product.label }}
+                                    {{ item_form.product }}
+                                </label>
+                                <label>
+                                    {{ item_form.quantity.label }}
+                                    {{ item_form.quantity }}
+                                </label>
+                                <button type="button" class="btn btn-sm remove-order-item-btn">Remove</button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <template id="empty-item-form-template">
+                        <div class="order-item-row row">
+                            <label>Product {{ formset.empty_form.product }}</label>
+                            <label>Quantity {{ formset.empty_form.quantity }}</label>
+                            <button type="button" class="btn btn-sm remove-order-item-btn">Remove</button>
+                        </div>
+                    </template>
+                    <button type="button" id="add-product-btn" class="btn btn-sm">+ Product</button>
+                    <div class="row">
+                        <label>
+                            {{ form.payment_method.label }}
+                            {{ form.payment_method }}
+                        </label>
+                        <label>
+                            {{ form.ship_to.label }}
+                            {{ form.ship_to }}
+                        </label>
+                    </div>
+                    <div id="customer_shippement_addres" class="hidden">
+                        <div class="modal-new-customer-shippement">
+                            <div class="row">
+                                <label>
+                                    First Name
+                                    <input name="ship_to_customer_first_name" data-nc="shipFirstName" />
+                                </label>
+                                <label>
+                                    Last Name
+                                    <input name="ship_to_customer_last_name" data-nc="shipLastName" />
+                                </label>
+                            </div>
+                            <div class="row">
+                                <label>
+                                    Email
+                                    <input name="ship_to_customer_email" data-nc="shipEmail" />
+                                </label>
+                                <label>
+                                    Phone
+                                    <input name="ship_to_customer_phone" data-nc="shipPhone" />
+                                </label>
+                            </div>
+                            <div class="row-3">
+                                <label>
+                                    Address
+                                    <input name="ship_to_customer_address" data-nc="shipAddress" />
+                                </label>
+                                <label>
+                                    Zip code
+                                    <input name="ship_to_customer_zip_code" data-nc="shipZipCode" />
+                                </label>
+                                <label>
+                                    City
+                                    <input name="ship_to_customer_city" data-nc="shipCity" />
+                                </label>
+                            </div>
+                            <div class="row">
+                                <label>
+                                    State
+                                    <input name="ship_to_customer_state" data-nc="shipState" />
+                                </label>
+                                <label>
+                                    Country
+                                    <input name="ship_to_customer_country" data-nc="shipCountry" />
+                                </label>
+                            </div>
+                    </div>
+                    </div>
+                    <label>
+                        {{ form.notes.label }}
+                        {{ form.notes }}
+                    </label>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn" type="button" onclick="closeModal('order-modal')">Cancel</button>
+                    <button class="btn btn-primary" type="submit">Create order</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script id="order-items-map" type="application/json">{{ order_items_map_json|safe }}</script>
 {% endblock content %}
+{% block extra_js %}
+    <script src="{% static 'js/sales.js' %}" defer></script>
+{% endblock extra_js %}

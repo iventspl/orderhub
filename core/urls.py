@@ -21,7 +21,8 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/users/', include('users.urls')),
+    path('api/', include('api.urls')),
+    path('users/', include('users.urls')),
     path('sales/', include('sales.urls')),
     path('warehouse/', include('warehouse.urls')),
     path('packing/', include('packing.urls')),
@@ -31,5 +32,12 @@ urlpatterns = [
     path('inventory/', include('inventory.urls')),
     path('reports/', include('reports.urls')),
     path('transfers/', include('transfers.urls')),
+    path('staff/', include('staff.urls')),
+    path('helpcenter/', include('helpcenter.urls')),
+    path('discussion/', include('discussion.urls')),
     path('', include('mainapp.urls')),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

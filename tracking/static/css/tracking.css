@@ -1,0 +1,45 @@
+ .shipment-status {
+	 display: flex;
+	 flex-direction: column;
+	 gap: 8px;
+ }
+
+ .shipment-status__title {
+	 font-weight: 700;
+ }
+
+ .shipment-status__meta {
+	 font-size: 0.9rem;
+	 color: #64748b;
+ }
+
+ .shipment-status__steps {
+	 display: flex;
+	 flex-direction: column;
+	 gap: 6px;
+ }
+
+ .shipment-status__step {
+	 display: flex;
+	 align-items: center;
+	 gap: 8px;
+	 color: #94a3b8;
+ }
+
+ .shipment-status__step-dot {
+	 width: 10px;
+	 height: 10px;
+	 border-radius: 50%;
+	 display: inline-block;
+	 background: #cbd5e1;
+	 flex: 0 0 auto;
+ }
+
+ .shipment-status__step--active {
+	 font-weight: 700;
+	 color: #166534;
+ }
+
+ .shipment-status__step--active .shipment-status__step-dot {
+	 background: #22c55e;
+ }

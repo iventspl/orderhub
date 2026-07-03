@@ -13,5 +13,7 @@
   },
   "files.associations": {
     "**/templates/**/*.html": "jinja-html"
-  }
+  },
+  "djlint.showInstallError": false,
+  "liveServer.settings.port": 5501
 }

@@ -1,4 +1,5 @@
 {% extends "mainapp/base.html" %}
+{% load static %}
 {% block title %}
     Inventory - Organized Company
 {% endblock title %}
@@ -10,6 +11,12 @@
         <div class="card">
             <div class="card-header">
                 <h3>Inventory</h3>
+                <div class="toolbar">
+                    <input id="inv-search" type="text" placeholder="Search SKU, name, category…" />
+                    <button class="btn btn-primary btn-sm"
+                            id="inv-new"
+                            type="button"
+                            onclick="openModal('inventory-create-modal')">+ New product</button>
             </div>
             <table>
                 <thead>
@@ -20,57 +27,86 @@
                         <th>Price</th>
                         <th>Store</th>
                         <th>Warehouse</th>
-                        <th>Reorder</th>
+                        <th>Reserved</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr>
-                        <td>LEN-0100</td>
-                        <td>Premium lens 1</td>
-                        <td>Lenses</td>
-                        <td>€18.00</td>
-                        <td>0</td>
-                        <td>18</td>
-                        <td>8</td>
+                <tbody class="card-body">
+                    {% for product in products %}
+                    <tr class="clickable">
+                        <td>{{ product.sku }}</td>
+                        <td>{{ product.name }}</td>
+                        <td>{{ product.get_category_display }}</td>
+                        <td>€{{ product.price }}</td>
+                        <td>{{ product.get_store_quantity }}</td>
+                        <td>{{ product.get_main_quantity }}</td>
+                        <td>{{ product.reserved_quantity }}</td>
                     </tr>
-                    <tr>
-                        <td>FRM-0101</td>
-                        <td>Classic frame 2</td>
-                        <td>Frames</td>
-                        <td>€29.00</td>
-                        <td>7</td>
-                        <td>37</td>
-                        <td>9</td>
-                    </tr>
-                    <tr>
-                        <td>CLN-0102</td>
-                        <td>Cleaner set 3</td>
-                        <td>Accessories</td>
-                        <td>€40.00</td>
-                        <td>14</td>
-                        <td>56</td>
-                        <td>10</td>
-                    </tr>
-                    <tr>
-                        <td>DSP-0103</td>
-                        <td>Display stand 4</td>
-                        <td>Displays</td>
-                        <td>€51.00</td>
-                        <td>21</td>
-                        <td>75</td>
-                        <td>11</td>
-                    </tr>
-                    <tr>
-                        <td>ACC-0104</td>
-                        <td>Travel case 5</td>
-                        <td>Accessories</td>
-                        <td>€62.00</td>
-                        <td>0</td>
-                        <td>94</td>
-                        <td>12</td>
-                    </tr>
+                {% endfor %}
                 </tbody>
             </table>
         </div>
+
+        <!-- modals -->
+        <div id="inventory-create-modal" class="modal-backdrop hidden">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3>Add new product</h3>
+                    <button class="btn btn-quiet" onclick="closeModal('inventory-create-modal')">&times;</button>
+                </div>
+                <form method="post" action="{% url 'inventory:add_product' %}">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <div class="row-3">
+                            <label>
+                                {{ form.product_sku.label }}
+                                {{ form.product_sku }} 
+                            </label>
+                            <label>
+                                {{ form.product_name.label }}
+                                {{ form.product_name }}
+                            </label>
+                            <label>
+                                {{ form.product_category.label }}
+                                {{ form.product_category }}
+                            </label>
+                        </div>
+                        <div class="row-2">
+                            
+                            <label>
+                                {{ form.price.label }}
+                                {{ form.price }}
+                            </label>
+                            <label>
+                                {{ form.stock_quantity.label }}
+                                {{ form.stock_quantity }}
+                            </label>
+                        </div>
+                        <div class="row-2">
+                            <label>
+                                {{ form.product_location.label }}
+                                {{ form.product_location }}
+                            </label>
+                            <label>
+                                {{ form.bin_location.label }}
+                                {{ form.bin_location }}
+                            </label>
+                        </div>
+
+                        <label>
+                            {{ form.product_description.label }}
+                            {{ form.product_description }}
+                        </label>
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Add product</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </section>
 {% endblock content %}
+
+{% block extra_js %}
+    <script src="{% static 'js/inventory.js' %}" defer></script>
+{% endblock extra_js %}

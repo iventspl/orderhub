@@ -1,4 +1,5 @@
 {% extends "mainapp/base.html" %}
+{% load static %}
 {% block title %}
     Transfers - Organized Company
 {% endblock title %}
@@ -10,6 +11,10 @@
         <div class="card">
             <div class="card-header">
                 <h3>Transfer history</h3>
+                <button class="btn btn-sm"
+                        id="new-transfer-btn"
+                        type="button"
+                        onclick="openModal('modal-transfer-stock')">+ New transfer</button>
             </div>
             <table>
                 <thead>
@@ -20,15 +25,114 @@
                         <th>SKU</th>
                         <th>Item</th>
                         <th>Qty</th>
-                        <th>Actor</th>
+                        <th>Autor</th>
+                        <th>Notes</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="7" class="muted" style="text-align:center;padding:24px">No transfers yet.</td>
-                    </tr>
+                    {% if transfers %}
+                        {% for transfer in transfers %}
+                            <tr class="clickable">
+                                <td>{{ transfer.created_on }}</td>
+                                <td>{{ transfer.source_warehouse }}</td>
+                                <td>{{ transfer.destination_warehouse }}</td>
+                                <td>
+                                    {% for item in transfer.transfer_products.all %}
+                                        <div>{{ item.product_sku|default:item.product.sku }}</div>
+                                    {% empty %}
+                                        <div>{{ transfer.product.sku }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    {% for item in transfer.transfer_products.all %}
+                                        <div>{{ item.product_name|default:item.product.name }}</div>
+                                    {% empty %}
+                                        <div>{{ transfer.product.name }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    {% for item in transfer.transfer_products.all %}
+                                        <div>{{ item.quantity }}</div>
+                                    {% empty %}
+                                        <div>{{ transfer.quantity }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>{{ transfer.created_by }}</td>
+                                <td>{{ transfer.notes|default:"-" }}</td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="8" class="muted" style="text-align:center;padding:24px">No transfers yet.</td>
+                        </tr>
+                    {% endif %}
                 </tbody>
             </table>
         </div>
+        <!-- ============================================================
+       13a. MODAL — Transfer stock
+  ============================================================ -->
+        <div id="modal-transfer-stock" class="modal-backdrop hidden">
+                <div class="modal" role="dialog">
+                    <form method="post" action="{% url 'transfers:create_transfer' %}" id="transfer-form">
+                        {% csrf_token %}
+                        {{ formset.management_form }}
+                        <div class="modal-header">
+                            <h3 style="margin:0">Transfer stock between warehouses</h3>
+                            <button class="btn btn-quiet" type="button" onclick="closeModal('modal-transfer-stock')">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row">
+                                <label>
+                                    {{ form.source_warehouse.label }}
+                                    {{ form.source_warehouse }}
+                                </label>
+                                <label>
+                                    {{ form.destination_warehouse.label }}
+                                    {{ form.destination_warehouse }}
+                                </label>
+                            </div>
+                            <div class="row">
+                                <label>
+                                    {{ form.product.label }}
+                                    {{ form.product }}
+                                </label>
+                                <label>
+                                    {{ form.quantity.label }}
+                                    {{ form.quantity }}
+                                </label>
+                            </div>
+                            <div id="transfer-items-container"></div>
+                            <template id="empty-item-form-template">
+                                <div class="transfer-item-row row">
+                                    {{ formset.empty_form.id }}
+                                    <label>
+                                        Product
+                                        {{ formset.empty_form.product }}
+                                    </label>
+                                    <label>
+                                        Quantity
+                                        {{ formset.empty_form.quantity }}
+                                    </label>
+                                    <button type="button" class="btn btn-sm remove-transfer-item-btn">Remove</button>
+                                </div>
+                            </template>
+                            <button type="button" id="add-product-btn" class="btn btn-sm">+ Product</button>
+                            <label>
+                                {{ form.notes.label }}
+                                {{ form.notes }}
+                            </label>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn" type="button" onclick="closeModal('modal-transfer-stock')">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Transfer</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
     </section>
 {% endblock content %}
+
+{% block extra_js %}
+    <script src="{% static 'js/transfers.js' %}" defer></script>
+{% endblock extra_js %}

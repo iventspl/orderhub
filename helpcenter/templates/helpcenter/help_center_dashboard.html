@@ -1,0 +1,382 @@
+{% extends "mainapp/base.html" %}
+{% load static %}
+{% block title %}
+    Help Center - Organized Company
+{% endblock title %}
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/helpcenter.css' %}">
+{% endblock extra_css %}
+{% block content %}
+
+        <!--
+    <section id="section-help-center">
+        <div class="card">
+            <div class="card-header">
+                <p>Help Center</p>
+                <h4>Bug reports & department tickets</h4>
+                <p>Submit issues to a specific department, assign owners and track every status change.</p>
+                <div class="help-center-stats">
+                    <span class="opened">1 open</span> 
+                    <span class="progress">1 in progress</span>
+                    <span class="resolved">1 resolved</span>
+                    <span class="assignee">0 unassigned</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="card-body-left">
+                    <div class="help-center-filtering">
+                        <div class="filtering-controls">
+                            <label for="search" class="search">
+                                <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 21-4.34-4.34"></path><circle cx="11" cy="11" r="8"></circle></svg>
+                                <input id="search" placeholder="Search tickets, reporter, assignee…" value="">
+                            </label>
+                            <select>
+                                <option value="All">All departments</option>
+                                <option value="Sales">Sales</option>
+                                <option value="Warehouse">Warehouse</option>
+                                <option value="Packing">Packing</option>
+                                <option value="Tracking">Tracking</option>
+                                <option value="Inventory">Inventory</option>
+                                <option value="IT / Platform">IT / Platform</option>
+                            </select>
+                            <select>
+                                <option value="All">All statuses</option>
+                                <option value="Open">Open</option>
+                                <option value="In progress">In progress</option>
+                                <option value="Resolved">Resolved</option>
+                            </select>
+                            <select>
+                                <option value="All">All assignees</option>
+                                <option value="Unassigned">Unassigned</option>
+                                <option value="Marek">Marek</option>
+                                <option value="Anna">Anna</option>
+                                <option value="Renata">Renata</option>
+                                <option value="Lukas">Lukas</option>
+                                <option value="Elena">Elena</option>
+                                <option value="Pavel">Pavel</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="filtering-sort">
+                        <span>Sort by</span>
+                        <select class="sort-by">
+                                <option value="Newest">Newest</option>
+                                <option value="Oldest">Oldest</option>
+                                <option value="Priority">Priority</option>
+                        </select>
+                        <button class="sort-direction">↑</button>
+                        <span class="ticket-count">3 tickets</span>
+                    </div>
+                    <div class="tickets-list">
+                        <div class="ticket">
+                            <div class="ticket-header">
+                                <div class="ticket-info">
+                                    <span class="ticket-number">TCK-2026-12</span>
+                                    <span class="ticket-title">Barcode scanner skips every 5th item</span>
+                                </div>
+                                <div class="ticket-badges">
+                                    <span class=" ticket-badge open">Open</span>
+                                    <span class=" ticket-badge high">High</span>
+                                    <span class=" ticket-badge it">IT</span>
+                                    <span class=" ticket-badge unassigned">Unassigned</span>
+                                </div>
+                            </div>
+                            <div class="ticket-footer">
+                                <span class="ticket-reporter">by: Marek (Store Berlin)</span>
+                                <span class="ticket-assignee">15 Jun 2026, 10:20</span>
+                                <span class="ticket-replies">1 replies</span>
+                            </div>
+                        </div>
+                        <div class="ticket">
+                            <div class="ticket-header">
+                                <div class="ticket-info">
+                                    <span class="ticket-number">TCK-2026-12</span>
+                                    <span class="ticket-title">Barcode scanner skips every 5th item</span>
+                                </div>
+                                <div class="ticket-badges">
+                                    <span class=" ticket-badge open">Open</span>
+                                    <span class=" ticket-badge high">High</span>
+                                    <span class=" ticket-badge it">IT</span>
+                                    <span class=" ticket-badge unassigned">Unassigned</span>
+                                </div>
+                            </div>
+                            <div class="ticket-footer">
+                                <span class="ticket-reporter">by: Marek (Store Berlin)</span>
+                                <span class="ticket-assignee">15 Jun 2026, 10:20</span>
+                                <span class="ticket-replies">1 replies</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body-right">
+                    <form method="post" action="{% url 'helpcenter:submit_ticket' %}">
+                        {% csrf_token %}
+                        <div class="form-header">
+                            <h3 style="margin:0">Submit a new ticket</h3>
+                        </div>
+                        <div class="form-body">
+                            <div class="row">
+                                <label>
+                                    {{ form.department.label }}
+                                    {{ form.department }}
+                                </label>
+                                <label>
+                                    {{ form.priority.label }}
+                                    {{ form.priority }}
+                                </label>
+                            </div>
+                            <div class="row">
+                                <label>
+                                    {{ form.title.label }}
+                                    {{ form.title }}
+                                </label>
+                            </div>
+                            <div class="row">
+                                <label>
+                                    {{ form.description.label }}
+                                    {{ form.description }}
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-footer">
+                            <button type="submit" class="btn btn-primary">Submit</button>
+                        </div>
+                    
+                    </form>
+                </div>
+
+                
+            </div>
+        </div>
+    </section>-->
+    <section class="ticket-center">
+    <div class="error-modal" id="errorModal">
+        <div class="error-modal-content">
+            <span class="close" id="errorModalClose">&times;</span>
+            <p id="errorModalMessage"></p>
+        </div>
+    </div>
+    <header class="ticket-header">
+        <div>
+            <p class="section-label">Help Center</p>
+            <h2>Bug Reports & Department Tickets</h2>
+            <p class="section-description">
+                Submit issues to a specific department, assign owners and track every status change.
+            </p>
+        </div>
+
+        <div class="ticket-stats">
+            <span class="badge badge-warning">{{ open_tickets.count }} Open</span>
+            <span class="badge badge-info">{{ in_progress_tickets.count }} In Progress</span>
+            <span class="badge badge-muted">{{ resolved_tickets.count }} Resolved</span>
+            <span class="badge badge-muted">{{ unassigned_tickets.count }} Unassigned</span>
+        </div>
+    </header>
+
+    <div class="ticket-layout">
+
+        <!-- Ticket List -->
+        <main class="ticket-content">
+
+            <div class="ticket-filters">
+                <input name="search_query" type="text" placeholder="Search tickets, reporter, assignee..." />
+
+                <select name="filter_department">
+                    <option value="all">All Departments</option>
+                    {% for department, label in departments %}
+                        <option value="{{ department }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+
+                <select name="filter_status">
+                    <option value="all">All Statuses</option>
+                    {% for status, label in status_choices %}
+                        <option value="{{ status }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+
+                <select name="filter_assignee">
+                    <option value="all">All Assignees</option>
+                    <option value="unassigned">Unassigned</option>
+                    {% for assignee in assignee_choices %}
+                        <option value="{{ assignee.user.id }}">{{ assignee.get_full_name|default:assignee.user.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="ticket-toolbar">
+                <div class="sort-controls">
+                    <span>Sort by</span>
+
+                    <select id="sort" name="sort_by">
+                        <option value="created_on">Created</option>
+                        <option value="priority">Priority</option>
+                        <option value="status">Status</option>
+                        <option value="title">Title</option>
+                    </select>
+
+                    <button id="sort_direction" name="sort_direction" value="desc">Desc ↓</button>
+                </div>
+
+                <span>{{ tickets.paginator.count }} tickets</span>
+            </div>
+
+            <div class="ticket-list">
+                <!-- Ticket -->
+                {% for ticket in page_obj %}
+                    <details class="ticket-card" data-ticket-id="{{ ticket.id }}">
+
+                        <summary class="ticket-summary">
+
+                            <div class="ticket-top">
+                                <h3>
+                                    <span class="ticket-id">{{ ticket.ticket_number }}</span>
+                                    {{ ticket.title }}
+                                </h3>
+
+                                <div class="ticket-tags">
+                                    <span class="tag medium">{{ ticket.priority|capfirst }}</span>
+                                    <span class="tag progress">{{ ticket.get_status_display|capfirst }}</span>
+                                    <span class="tag">{{ ticket.department|capfirst }}</span>
+                                        <span class="tag">
+                                            {% if ticket.assigned_to %}
+                                                {{ ticket.assigned_to.profile.get_full_name|default:ticket.assigned_to.username }}
+                                            {% else %}
+                                                Unassigned
+                                            {% endif %}
+                                        </span>
+                                </div>
+                            </div>
+
+                            <p class="ticket-meta">
+                                by {{ ticket.created_by.profile.get_full_name|default:ticket.created_by.username }} ({{ ticket.created_by.profile.department.department|upper }}) · {{ ticket.created_on }} · {{ ticket.replies.count }} reply{% if ticket.replies.count != 1 %}ies{% endif %}
+                            </p>
+
+                        </summary>
+
+                        <div class="ticket-details">
+
+                            <p class="ticket-description">
+                                {{ ticket.description }}
+                            </p>
+
+                            <!-- Status & Assignee -->
+                            <div class="ticket-settings">
+
+                                <label>
+                                    <span>Status</span>
+
+                                    <select name="status">
+                                        <option value="open"        {% if ticket.status == 'open' %}selected{% endif %}>Open</option>
+                                        <option value="in_progress" {% if ticket.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                                        <option value="resolved"    {% if ticket.status == 'resolved' %}selected{% endif %}>Resolved</option>
+                                        <option value="closed"      {% if ticket.status == 'closed' %}selected{% endif %}>Closed</option>
+                                    </select>
+                                </label>
+
+                                <label>
+                                    <span>Assignee</span>
+
+                                    <select name="assignee">
+                                        <option value="unassigned" {% if not ticket.assigned_to %}selected{% endif %}>Unassigned</option>
+                                        {% for option in assignees %}
+                                            <option value="{{ option.id }}" {% if ticket.assigned_to == option %}selected{% endif %}>
+                                                {{ option.profile.get_full_name|default:option.username }} ({{ option.profile.department.department|upper }})
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </label>
+
+                            </div>
+
+                            <!-- History -->
+                            <div class="ticket-section">
+                                <h4>History</h4>
+
+                                <ol class="ticket-history">
+                                    {% for history_log in ticket.history.all %}
+                                        <li>
+                                            <strong>{{ history_log.performed_by.profile.get_full_name|default:history_log.performed_by.username }} ({{ history_log.performed_by.profile.department.department|upper }})</strong>
+                                            {{ history_log.action }}
+                                            <span>{{ history_log.performed_on|date:"d M Y, H:i" }}</span>
+                                        </li>
+                                    {% endfor %}
+                                </ol>
+                            </div>
+
+                            <!-- Replies -->
+                            <div class="ticket-section">
+                                <h4>Replies</h4>
+                                {% for reply in ticket.replies.all %}
+                                    <div class="reply-card">
+                                        <p class="reply-header">
+                                            {{ reply.commented_by.profile.get_full_name|default:reply.commented_by.username }} ({{ reply.commented_by.profile.department.department|upper }})
+                                            <span>{{ reply.commented_on|date:"d M Y, H:i" }}</span>
+                                        </p>
+
+                                        <p>
+                                            {{ reply.comment }}
+                                        </p>
+                                    </div>
+                                {% endfor %}
+                            </div>
+
+                            <form class="reply-form" method="post" action="{% url 'helpcenter:submit_ticket_reply' ticket.id %}">
+                                {% csrf_token %}
+                                {{ form_reply.comment }}
+                                <button type="submit" class="btn btn-primary">
+                                    Reply
+                                </button>
+                            </form>
+                        </div>
+                    </details>
+                {% endfor %}
+            </div>
+
+            <footer class="pagination">
+                <span>Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }}</span>
+
+                <div class="pagination-controls">
+                    <label>
+                        Show
+                        <select name="no_rows" class="pagination-rows" id="no_rows_select">
+                            <option value="10" {% if no_rows == "10" %}selected{% endif %}>10</option>
+                            <option value="25" {% if no_rows == "25" %}selected{% endif %}>25</option>
+                            <option value="50" {% if no_rows == "50" %}selected{% endif %}>50</option>
+                        </select>
+                    </label>
+                    {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}&rows={{ no_rows }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}{% if sort_dir %}&sort_dir={{ sort_dir }}{% endif %}">Prev</a>
+                    {% endif %}
+                    <span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}&rows={{ no_rows }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}{% if sort_dir %}&sort_dir={{ sort_dir }}{% endif %}">Next</a>
+                    {% endif %}
+                </div>
+            </footer>
+        </main>
+
+        <!-- Sidebar -->
+        <aside class="ticket-sidebar">
+            <h3>Submit New Ticket</h3>
+
+            <form class="ticket-form" method="post" action="{% url 'helpcenter:submit_ticket' %}">
+                {% csrf_token %}
+
+                {{ form.as_p}}
+
+                <button type="submit">+ Submit Ticket</button>
+
+                <small>
+                    The assigned department will be notified.
+                </small>
+            </form>
+        </aside>
+
+    </div>
+</section>
+{% endblock content %}
+
+{% block extra_js %}
+    <script src="{% static 'js/helpcenter.js' %}"></script>
+{% endblock extra_js %}
