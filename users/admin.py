@@ -18,8 +18,8 @@ class UserProfileAdmin(admin.ModelAdmin):
 
 @admin.register(Company)
 class CompanyAdmin(admin.ModelAdmin):
-    list_display = ('name', 'address', 'city', 'zip_code', 'country')
-    search_fields = ('name', 'address', 'city', 'zip_code', 'country')
+    list_display = ('name', 'company_code', 'address', 'city', 'zip_code', 'country')
+    search_fields = ('name', 'company_code', 'address', 'city', 'zip_code', 'country')
     list_filter = ('city', 'country')
     ordering = ('name',)
 

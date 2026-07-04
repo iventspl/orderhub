@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from users.models import UserProfile, User
 from django.views.decorators.http import require_POST
@@ -22,7 +22,7 @@ def staff_dashboard(request):
             staff_member = form.save()
             staff_member.save()
             # Redirect to the staff dashboard after successful addition
-            return render(request, 'staff/staff_dashboard.html', {'form': StaffAddForm(company_id=request.user.profile.active_company.id)})
+            return redirect('staff:staff_dashboard')
         else:
             # If the form is invalid, render the dashboard with the form errors
             return render(request, 'staff/staff_dashboard.html', {'form': form, 'staff_members': staff_list})
@@ -30,6 +30,7 @@ def staff_dashboard(request):
         'staff_members': staff_list,
         'form': form,
         'is_admin': is_admin,
+        'active_filter': filter_value if filter_value else 'All',
     }
     return render(request, 'staff/staff_dashboard.html', context)
 
@@ -55,7 +56,7 @@ def api_staff_details(request, pk):
                 'username': staff_member.user.username,
                 'first_name': staff_member.user.first_name,
                 'last_name': staff_member.user.last_name,
-                'email': staff_member.user.email,
+                'email': staff_member.email,
                 'phone_number': staff_member.phone_number,
                 'address': staff_member.address,
                 'city': staff_member.city,

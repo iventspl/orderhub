@@ -17,6 +17,7 @@
     </head>
     <body>
         <section id="app-view" class="app-shell">
+            {% if request.user.is_authenticated %}
             <aside class="sidebar">
                 <div class="brand">OrderHub</div>
                 <nav id="nav">
@@ -87,8 +88,8 @@
                 </nav>
                 <div class="sidebar-footer">
                     <div id="user-chip" class="user-chip">
-                        <strong>Marek Novak</strong>
-                        <span class="muted small">Staff · Berlin Store</span>
+                        <strong>{{ request.user.get_full_name }}</strong>
+                        <span class="muted small">{{ request.user.profile.get_assigned_role_display }} · {{ request.user.profile.active_company.name }}</span>
                     </div>
                     <form method="post" action="{% url 'users:user-logout' %}">
                         {% csrf_token %}
@@ -96,13 +97,36 @@
                     </form>
                 </div>
             </aside>
+            {% else %}
+                <aside class="sidebar">
+
+                    <div class="content">
+                        <div class="hero">
+                            <div class="badge">
+                                ✓ Secure staff login
+                            </div>
+
+                            <h1>
+                                Minimal order workspace for sales and logistics teams.
+                            </h1>
+
+                            <p>
+                                Sign in to manage orders, update statuses,
+                                coordinate warehouse handoffs and follow each shipment.
+                            </p>
+                        </div>
+                    </div>
+                </aside>
+            {% endif %}
             <main class="main">
+                {% if request.user.is_authenticated %}
                 <header class="topbar">
                     <h2 id="page-title">Dashboard</h2>
                     <div class="topbar-actions">
                         <span id="session-timer" class="muted small"></span>
                     </div>
                 </header>
+                {% endif %}
                 <div id="content">
                     {% if messages %}
                         {% for message in messages %}

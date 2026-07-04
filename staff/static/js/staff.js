@@ -4,6 +4,8 @@ class Staff{
     #side = document.querySelector('.side');
     #isActive = false;
     #toolbarChips = document.querySelector('.toolbar .chips');
+    #newStaffModal = document.getElementById('new-staff-modal');
+    #newStaffOverlay = document.getElementById('new-staff-overlay');
     constructor(){
         this.#panel.addEventListener('click', (e)=>{
             let memberItem = e.target.closest('.member-item');
@@ -31,6 +33,14 @@ class Staff{
                 window.location.href = `/staff/?filter=${encodeURIComponent(chipValue)}`;
             }
         });
+
+        document.getElementById('add-staff-btn').addEventListener('click', ()=>{
+            this.#newStaffModal.classList.add('active');
+        })
+
+        this.#newStaffOverlay.addEventListener('click', ()=>{
+            this.#newStaffModal.classList.remove('active');
+        })
     }
 
     async _showMemberDetails(memberId){
