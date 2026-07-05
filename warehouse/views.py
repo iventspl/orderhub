@@ -3,6 +3,8 @@ import json
 from .forms import WarehouseForm
 from django.contrib import messages
 from django.db import transaction
+from django.core.paginator import Paginator
+from django.db.models import Count, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render, redirect
 from django.views.decorators.http import require_POST
@@ -42,19 +44,65 @@ def _warehouse_payload(warehouse):
 @login_required
 def warehouse_list(request, warehouse_type=None):
     user_company = get_object_or_404(Membership, user=request.user)
-    warehouses = Warehouse.objects.filter(company_id=user_company.company_id).order_by('-created_on')
+    warehouses = (
+        Warehouse.objects
+        .filter(company_id=user_company.company_id)
+        .annotate(product_count=Count('product'))
+        .order_by('-created_on')
+    )
     if warehouse_type:
         warehouse_type = warehouse_type.upper()
         warehouses = warehouses.filter(warehouse_type=warehouse_type)
-    warehouses_map = {str(warehouse.id): _warehouse_payload(warehouse) for warehouse in warehouses}
     form = WarehouseForm()
     context = {
         'page': 'warehouse',
         'warehouses': warehouses,
-        'warehouses_map_json': json.dumps(warehouses_map),
         'form': form,
     }
     return render(request, 'warehouse/warehouse_list.html', context)
+
+
+_SORT_FIELDS = {
+    'sku':      'sku',
+    'name':     'name',
+    'reserved': 'reserved_quantity',
+    'stock':    'stock_quantity',
+}
+
+@login_required
+def warehouse_detail(request, warehouse_id):
+    user_company = get_object_or_404(Membership, user=request.user)
+    warehouse = get_object_or_404(Warehouse, pk=warehouse_id, company_id=user_company.company_id)
+    products = warehouse.get_warehouse_products()
+
+    search_query = request.GET.get('search', '').strip()
+    if search_query:
+        products = products.filter(
+            Q(sku__icontains=search_query) | Q(name__icontains=search_query)
+        )
+
+    sort_by  = request.GET.get('sort', 'name')
+    sort_dir = request.GET.get('dir',  'asc')
+    sort_field = _SORT_FIELDS.get(sort_by, 'name')
+    products = products.order_by(f'-{sort_field}' if sort_dir == 'desc' else sort_field)
+
+    no_rows   = request.GET.get('rows', '25')
+    paginator = Paginator(products, no_rows)
+    page_obj  = paginator.get_page(request.GET.get('page'))
+
+    _privileged = {Membership.Roles.ADMIN, Membership.Roles.MANAGER}
+    context = {
+        'page':         'warehouse',
+        'warehouse':    warehouse,
+        'products':     products,
+        'page_obj':     page_obj,
+        'no_rows':      no_rows,
+        'search_query': search_query,
+        'sort_by':      sort_by,
+        'sort_dir':     sort_dir,
+        'can_edit':     user_company.role in _privileged,
+    }
+    return render(request, 'warehouse/warehouse_detail.html', context)
 
 
 @require_POST
@@ -86,11 +134,23 @@ def get_warehouse_types(request):
 @login_required
 def create_warehouse(request):
     form = WarehouseForm(request.POST)
+    company = get_object_or_404(Membership, user=request.user).company
 
     if form.is_valid():
         warehouse = form.save(commit=False)
         warehouse.created_by = request.user
-        warehouse.company = get_object_or_404(Membership, user=request.user).company
+        warehouse.company = company
+
+        if warehouse.warehouse_type == Warehouse.WarehouseType.MAIN:
+            already_exists = Warehouse.objects.filter(
+                company=company,
+                warehouse_type=Warehouse.WarehouseType.MAIN,
+            ).exists()
+            if already_exists:
+                error_msg = 'A Main Warehouse already exists for this company. Only one is allowed.'
+                messages.error(request, error_msg)
+                return redirect('warehouse:warehouse_list')
+
         warehouse.save()
         messages.success(request, f'Warehouse {warehouse.name} created successfully.')
         return redirect('warehouse:warehouse_list')

@@ -1,86 +1,88 @@
 {% extends "mainapp/base.html" %}
 {% load static %}
-{% block title %}
-    Tracking - Organized Company
-{% endblock title %}
+{% block title %}Tracking - Organized Company{% endblock title %}
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/tracking.css' %}">
 {% endblock extra_css %}
 
 {% block content %}
-
-    <!-- ============================================================
-             7. TRACKING
-        ============================================================ -->
-    <section id="section-tracking">
-        <div class="card">
-            <div class="card-header">
-                <h3>Shipments</h3>
-            </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Order</th>
-                        <th>Customer</th>
-                        <th>Destination</th>
-                        <th>Tracking</th>
-                        <th>Carrier</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for tracking in trackings %}
-                        <tr class="clickable">
-                            <td>{{ tracking.order.order_number }}</td>
-                            <td>{{ tracking.order.customer.get_full_name }}</td>
-                            <td>{{ tracking.order.ship_address }}</td>
-                            <td>{{ tracking.tracking_number }}</td>
-                            <td>{{ tracking.carrier }}</td>
-                            <td>
-                                <span class="badge {{ tracking.status|lower }}">{{ tracking.status }}</span>
-                            </td>
-                        </tr>
-                         <!-- expanded row  -->
-                        <tr class="expand-row" data-id="{{ tracking.order.id }}">
-                            <td colspan="6">
-                                <dl class="kv">
-                                    <dt>Order notes<br>Standard handling priority</dt>
-                                    <dd>
-                                        <div class="shipment-status">
-                                            <div class="shipment-status__title">Shipment status</div>
-                                            <div class="shipment-status__meta">
-                                                Created 08:12 - Sales order submitted by Marek
-                                            </div>
-                                            <div class="shipment-status__steps">
-                                                <div class="shipment-status__step {% if tracking.status == 'IN WAREHOUSE' %}shipment-status__step--active{% endif %}">
-                                                    <span class="shipment-status__step-dot"></span>
-                                                    In warehouse
-                                                </div>
-                                                <div class="shipment-status__step {% if tracking.status == 'PACKED' %}shipment-status__step--active{% endif %}">
-                                                    <span class="shipment-status__step-dot"></span>
-                                                    Packed
-                                                </div>
-                                                <div class="shipment-status__step {% if tracking.status == 'SHIPPED' %}shipment-status__step--active{% endif %}">
-                                                    <span class="shipment-status__step-dot"></span>
-                                                    In transit
-                                                </div>
-                                                <div class="shipment-status__step {% if tracking.status == 'DELIVERED' %}shipment-status__step--active{% endif %}">
-                                                    <span class="shipment-status__step-dot"></span>
-                                                    Delivered
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </dd>
-                                </dl>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+<section id="section-tracking">
+    <div class="card">
+        <div class="card-header">
+            <h3>Shipments</h3>
         </div>
-    </section>
+        <table>
+            <thead>
+                <tr>
+                    <th>Order</th>
+                    <th>Customer</th>
+                    <th>Destination</th>
+                    <th>Tracking #</th>
+                    <th>Carrier</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tracking in trackings %}
+
+                <tr class="clickable" data-id="{{ tracking.id }}">
+                    <td>{{ tracking.order.order_number }}</td>
+                    <td>{{ tracking.order.customer.get_full_name }}</td>
+                    <td>{{ tracking.order.ship_address|truncatechars:40 }}</td>
+                    <td>{{ tracking.tracking_number }}</td>
+                    <td>{{ tracking.get_carrier_display }}</td>
+                    <td>
+                        <span class="badge {{ tracking.order.status|lower|cut:' ' }}">
+                            {{ tracking.order.get_status_display }}
+                        </span>
+                    </td>
+                </tr>
+
+                <tr class="expand-row" data-id="{{ tracking.id }}">
+                    <td colspan="6">
+                        <div class="tracking-detail">
+
+                            <div class="tracking-detail__col">
+                                <p class="muted" style="margin:0 0 4px;">Order notes</p>
+                                <p style="margin:0;">{{ tracking.order.notes|default:"—" }}</p>
+                            </div>
+
+                            <div class="tracking-detail__col">
+                                <p class="muted" style="margin:0 0 8px;">Shipment status</p>
+                                <div class="shipment-status">
+                                    {% for step in tracking.steps %}
+                                    <div class="shipment-status__step shipment-status__step--{{ step.state }}">
+                                        <span class="shipment-status__step-dot"></span>
+                                        <div class="shipment-status__step-body">
+                                            <span class="shipment-status__step-label">{{ step.label }}</span>
+                                            {% if step.timestamp %}
+                                            <span class="shipment-status__step-meta">
+                                                {{ step.timestamp|date:"Y-m-d H:i" }}{% if step.by %} &middot; {{ step.by }}{% endif %}
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                        </div>
+                    </td>
+                </tr>
+
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align:center;padding:2rem;color:var(--muted);">
+                        No shipments yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
 {% endblock content %}
 
 {% block extra_js %}
-    <script src="{% static 'js/tracking.js' %}"></script>
+    <script src="{% static 'js/tracking.js' %}" defer></script>
 {% endblock extra_js %}

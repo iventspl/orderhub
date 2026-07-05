@@ -38,6 +38,7 @@ class PackingOrder(models.Model):
         default=PackingStatus.PENDING,
     )
     stock_deducted = models.BooleanField(default=False)
+    is_partial = models.BooleanField(default=False)
     is_packed = models.BooleanField(default=False)
     packed_on = models.DateTimeField(blank=True, null=True)
     created_on = models.DateTimeField(auto_now_add=True)

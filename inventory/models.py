@@ -31,6 +31,7 @@ class Product(models.Model):
     stock_quantity = models.PositiveIntegerField(default=0)
     product_location = models.ForeignKey('warehouse.Warehouse', on_delete=models.CASCADE)
     bin_location = models.CharField(max_length=255, blank=True, null=True)  # Optional field for more specific location details
+    product_image = models.ImageField(upload_to='product_images/', blank=True, null=True)  # Optional field for product image
 
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     created_on = models.DateTimeField(auto_now_add=True)

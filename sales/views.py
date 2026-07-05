@@ -50,7 +50,8 @@ def _lock_and_validate_stock(requested_by_sku, assigned_warehouse, main_warehous
 
 @login_required
 def sales_list(request, no_rows=10):
-    user_company = get_object_or_404(Membership, user=request.user).company
+    membership = get_object_or_404(Membership, user=request.user)
+    user_company = membership.company
     if not user_company:
         messages.error(request, 'User does not belong to any company.')
         return redirect('home')
@@ -229,7 +230,8 @@ def sales_list(request, no_rows=10):
         'search_query': search_query or '',
         'sort_by': request.GET.get('sort_by') or '',
         'sort_dir': sort_dir or '',
-        'status_filters': status_filters
+        'status_filters': status_filters,
+        'can_edit': membership.role in {Membership.Roles.ADMIN, Membership.Roles.MANAGER},
     }
     return render(request, 'sales/sales_list.html', context)
 
@@ -346,7 +348,7 @@ def edit_sales_order(request):
                 # Release previous reservation amounts tracked on the order item.
                 if item.reserved_from_assigned and assigned_warehouse:
                     assigned_product = Product.objects.select_for_update().filter(
-                        sku=item.product.sku,
+                        sku=item.resolved_sku,
                         product_location=assigned_warehouse,
                         company_id=user_company.id
                     ).first()
@@ -359,7 +361,7 @@ def edit_sales_order(request):
 
                 if item.reserved_from_main and main_warehouse:
                     main_product_for_release = Product.objects.select_for_update().filter(
-                        sku=item.product.sku,
+                        sku=item.resolved_sku,
                         product_location=main_warehouse,
                         company_id=user_company.id
                     ).first()
@@ -377,7 +379,7 @@ def edit_sales_order(request):
                 # Reserve from assigned warehouse first.
                 if assigned_warehouse:
                     assigned_product = Product.objects.select_for_update().filter(
-                        sku=item.product.sku,
+                        sku=item.resolved_sku,
                         product_location=assigned_warehouse,
                         company_id=user_company.id
                     ).first()
@@ -397,7 +399,7 @@ def edit_sales_order(request):
                 # Reserve missing part from MAIN warehouse.
                 if remaining_qty > 0 and main_warehouse:
                     main_product = Product.objects.select_for_update().filter(
-                        sku=item.product.sku,
+                        sku=item.resolved_sku,
                         product_location=main_warehouse,
                         company_id=user_company.id
                     ).first()
@@ -634,7 +636,7 @@ def delete_sales_order(request, order_id):
                 assigned_warehouse = profile.assigned_warehouse if profile else None
                 if assigned_warehouse:
                     assigned_product = Product.objects.select_for_update().filter(
-                        sku=item.product.sku,
+                        sku=item.resolved_sku,
                         product_location=assigned_warehouse,
                         company_id=user_company.id
                     ).first()
@@ -652,7 +654,7 @@ def delete_sales_order(request, order_id):
                 ).first()
                 if main_warehouse:
                     main_product = Product.objects.select_for_update().filter(
-                        sku=item.product.sku,
+                        sku=item.resolved_sku,
                         product_location=main_warehouse,
                         company_id=user_company.id
                     ).first()
@@ -665,3 +667,184 @@ def delete_sales_order(request, order_id):
         order.delete()
         messages.success(request, 'Order deleted successfully.')
     return JsonResponse({'ok': True, 'message': 'Order deleted successfully.'})
+
+
+_TRANSITION_MAP = {
+    'approve':        (SalesOrder.SalesOrderStatus.DRAFT,        SalesOrder.SalesOrderStatus.IN_WAREHOUSE),
+    'mark_packed':    (SalesOrder.SalesOrderStatus.IN_WAREHOUSE, SalesOrder.SalesOrderStatus.PACKED),
+    'assign_courier': (SalesOrder.SalesOrderStatus.PACKED,       SalesOrder.SalesOrderStatus.SHIPPED),
+    'deliver':        (SalesOrder.SalesOrderStatus.SHIPPED,      SalesOrder.SalesOrderStatus.DELIVERED),
+}
+
+def _deduct_shipped_stock(order, user, company):
+    """
+    Deducts each order item's reserved quantities from the physical warehouse stock.
+    Called on SHIPPED (items leave the building) and again on DELIVERED as a no-op
+    safety net — zeroing reserved_from_* makes subsequent calls idempotent.
+    """
+    main_warehouse = Warehouse.objects.filter(
+        warehouse_type=Warehouse.WarehouseType.MAIN,
+        company=company,
+    ).first()
+
+    profile = UserProfile.objects.select_related('assigned_warehouse').filter(
+        user=order.created_by
+    ).first()
+    assigned_warehouse = profile.assigned_warehouse if profile else None
+
+    packing_order = PackingOrder.objects.filter(order=order, company=company).first()
+    # Main warehouse stock may already be deducted by the packing scan flow.
+    main_already_deducted = bool(packing_order and packing_order.stock_deducted)
+
+    items = list(SalesOrderItem.objects.select_for_update().filter(order=order, company=company))
+
+    for item in items:
+        sku          = item.resolved_sku
+        assigned_qty = item.reserved_from_assigned
+        main_qty     = item.reserved_from_main
+
+        # --- Assigned (store) warehouse ---
+        if assigned_qty > 0:
+            candidates = Product.objects.select_for_update().filter(sku=sku, company=company)
+            if main_warehouse:
+                candidates = candidates.exclude(product_location=main_warehouse)
+            candidates = list(candidates)
+            # Prefer the creator's assigned warehouse; within that, drain the most-reserved first.
+            candidates.sort(key=lambda p: (
+                0 if assigned_warehouse and p.product_location_id == assigned_warehouse.id else 1,
+                -p.reserved_quantity,
+            ))
+
+            remaining = assigned_qty
+            for product in candidates:
+                if remaining <= 0:
+                    break
+                releasable = min(remaining, product.reserved_quantity)
+                if releasable <= 0:
+                    continue
+                product.stock_quantity    = max(product.stock_quantity    - releasable, 0)
+                product.reserved_quantity = max(product.reserved_quantity - releasable, 0)
+                product.save(update_fields=['stock_quantity', 'reserved_quantity'])
+                Logger.objects.create(
+                    action=f'Stock deducted for SKU {sku} from ASSIGNED warehouse (order {order.order_number} shipped)',
+                    user=user,
+                    content_object=order,
+                )
+                remaining -= releasable
+
+        # --- Main warehouse ---
+        if main_qty > 0 and main_warehouse:
+            main_product = Product.objects.select_for_update().filter(
+                sku=sku,
+                product_location=main_warehouse,
+                company=company,
+            ).first()
+            if main_product:
+                if not main_already_deducted:
+                    main_product.stock_quantity = max(main_product.stock_quantity - main_qty, 0)
+                main_product.reserved_quantity = max(main_product.reserved_quantity - main_qty, 0)
+                main_product.save(update_fields=['stock_quantity', 'reserved_quantity'])
+                Logger.objects.create(
+                    action=f'Stock deducted for SKU {sku} from MAIN warehouse (order {order.order_number} shipped)',
+                    user=user,
+                    content_object=order,
+                )
+
+        item.reserved_from_assigned = 0
+        item.reserved_from_main     = 0
+        item.save(update_fields=['reserved_from_assigned', 'reserved_from_main'])
+
+    if packing_order and not packing_order.stock_deducted:
+        packing_order.stock_deducted = True
+        packing_order.save(update_fields=['stock_deducted'])
+
+@require_POST
+@login_required
+def transition_order(request, order_id):
+    membership = get_object_or_404(Membership, user=request.user)
+
+    if membership.role not in {Membership.Roles.ADMIN, Membership.Roles.MANAGER}:
+        return JsonResponse({'ok': False, 'error': 'Permission denied.'}, status=403)
+
+    order = get_object_or_404(SalesOrder, id=order_id, company=membership.company)
+
+    try:
+        data = json.loads(request.body.decode('utf-8')) if request.body else {}
+    except json.JSONDecodeError:
+        return JsonResponse({'ok': False, 'error': 'Invalid JSON.'}, status=400)
+
+    action = data.get('action')
+    if action not in _TRANSITION_MAP:
+        return JsonResponse({'ok': False, 'error': 'Unknown action.'}, status=400)
+
+    required_status, new_status = _TRANSITION_MAP[action]
+    if order.status != required_status:
+        return JsonResponse({
+            'ok': False,
+            'error': f'Order must be "{required_status}" to perform this action.',
+        }, status=400)
+
+    try:
+        with transaction.atomic():
+            update_fields = ['status']
+
+            if action == 'assign_courier':
+                carrier = data.get('carrier', '').strip()
+                tracking_number = data.get('tracking_number', '').strip()
+                if not carrier or not tracking_number:
+                    return JsonResponse({'ok': False, 'error': 'Carrier and tracking number are required.'}, status=400)
+
+                # Update the placeholder tracking row created at order creation rather
+                # than inserting a second one (which would cause duplicates in the UI).
+                tracking = Tracking.objects.filter(order=order).first()
+                if tracking:
+                    tracking.tracking_number = tracking_number
+                    tracking.carrier         = carrier
+                    tracking.status          = Tracking.TrackingStatus.SHIPPED
+                    tracking.save(update_fields=['tracking_number', 'carrier', 'status'])
+                else:
+                    tracking = Tracking.objects.create(
+                        tracking_number=tracking_number,
+                        order=order,
+                        carrier=carrier,
+                        status=Tracking.TrackingStatus.SHIPPED,
+                        created_by=request.user,
+                        company=membership.company,
+                    )
+                order.tracking = tracking
+                update_fields.append('tracking')
+
+                # Items physically leave the warehouse — deduct reserved stock now.
+                _deduct_shipped_stock(order, request.user, membership.company)
+
+                # Packing order is no longer needed once the shipment is dispatched.
+                PackingOrder.objects.filter(order=order, company=membership.company).delete()
+
+            if action == 'deliver':
+                # No-op if SHIPPED already zeroed the reservations; handles the
+                # edge case where the order skipped the SHIPPED deduction path.
+                _deduct_shipped_stock(order, request.user, membership.company)
+
+            order.status = new_status
+            order.save(update_fields=update_fields)
+
+            _ACTION_MESSAGES = {
+                'approve':        f'Order {order.order_number} approved — moved to In Warehouse.',
+                'mark_packed':    f'Order {order.order_number} marked as Packed.',
+                'assign_courier': f'Order {order.order_number} shipped via {data.get("carrier", "")} (tracking: {data.get("tracking_number", "")}).',
+                'deliver':        f'Order {order.order_number} marked as Delivered.',
+            }
+            success_msg = _ACTION_MESSAGES.get(action, f'Order {order.order_number} updated.')
+            messages.success(request, success_msg)
+
+            Logger.objects.create(
+                action=success_msg,
+                user=request.user,
+                content_object=order,
+            )
+    except Exception as e:
+        error_msg = str(e)
+        messages.error(request, error_msg)
+        return JsonResponse({'ok': False, 'error': error_msg}, status=400)
+
+    return JsonResponse({'ok': True, 'new_status': new_status, 'message': success_msg})

@@ -28,6 +28,9 @@ def validate_before_marking_packed(sender, instance, **kwargs):
     if previous_status == PackingOrder.PackingStatus.PACKED:
         return
 
+    if instance.is_partial:
+        return
+
     has_items = PackingOrderItem.objects.filter(packing_order=instance, company_id=company_id).exists()
     has_incomplete_items = PackingOrderItem.objects.filter(
         packing_order=instance,

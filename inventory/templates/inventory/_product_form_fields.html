@@ -1,0 +1,50 @@
+<div class="row-3">
+    <label>
+        {{ form.product_sku.label }}
+        {{ form.product_sku }}
+    </label>
+    <label>
+        {{ form.product_name.label }}
+        {{ form.product_name }}
+    </label>
+    <label>
+        {{ form.product_category.label }}
+        {{ form.product_category }}
+    </label>
+</div>
+<div class="row-2">
+    <label>
+        {{ form.price.label }}
+        {{ form.price }}
+    </label>
+    <label>
+        {{ form.stock_quantity.label }}
+        {{ form.stock_quantity }}
+    </label>
+</div>
+<div class="row-2">
+    <label>
+        {{ form.product_location.label }}
+        {{ form.product_location }}
+    </label>
+    <label>
+        {{ form.bin_location.label }}
+        {{ form.bin_location }}
+    </label>
+</div>
+
+<label>
+    {{ form.product_description.label }}
+    {{ form.product_description }}
+</label>
+<label>
+    {{ form.product_image.label }}
+    {{ form.product_image }}
+</label>
+{% if is_edit %}
+    <img id="edit-product-image-preview" class="product-image hidden" src="" alt="Product image preview">
+    <label class="row" style="grid-template-columns: auto 1fr; align-items:center;">
+        {{ form.remove_image }}
+        {{ form.remove_image.label }}
+    </label>
+{% endif %}

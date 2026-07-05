@@ -3,6 +3,8 @@ import json
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import F
+from django.db.models.functions import Greatest
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render, redirect
 from django.views.decorators.http import require_POST
@@ -11,7 +13,7 @@ from tracking.models import Tracking
 from users.models import Membership
 
 from .models import PackingOrder, PackingOrderItem, PackingScanEvent
-from sales.models import SalesOrder
+from sales.models import SalesOrder, SalesOrderItem
 
 
 @login_required
@@ -141,6 +143,20 @@ def complete_packing(request, packing_order_id):
                     company_id=packing_order.company_id,
                 )
 
+        shortage = [
+            {
+                'sku': i.resolved_sku,
+                'name': i.resolved_name,
+                'required': i.quantity_required,
+                'scanned': i.quantity_scanned,
+            }
+            for i in PackingOrderItem.objects.filter(packing_order=packing_order)
+            if i.quantity_scanned < i.quantity_required
+        ]
+
+        if shortage:
+            return JsonResponse({'ok': True, 'partial': True, 'shortage': shortage})
+
         packing_order.status = PackingOrder.PackingStatus.PACKED
         if request.user.is_authenticated:
             packing_order.packed_by = request.user
@@ -156,6 +172,90 @@ def complete_packing(request, packing_order_id):
         )
 
     return JsonResponse({'ok': True})
+
+
+@login_required
+@require_POST
+def complete_partial(request, packing_order_id):
+    user_company = get_object_or_404(Membership, user=request.user).company
+    packing_order = get_object_or_404(PackingOrder, pk=packing_order_id, company_id=user_company.id)
+
+    try:
+        payload = json.loads(request.body.decode('utf-8')) if request.body else {}
+    except json.JSONDecodeError:
+        return JsonResponse({'ok': False, 'error': 'Invalid JSON payload.'}, status=400)
+
+    action = payload.get('action')
+    if action not in ('ship_partial', 'create_backorder'):
+        return JsonResponse({'ok': False, 'error': 'action must be ship_partial or create_backorder.'}, status=400)
+
+    backorder_created = False
+    backorder_reason = None
+
+    with transaction.atomic():
+        items = list(PackingOrderItem.objects.select_for_update().filter(
+            packing_order=packing_order,
+            company_id=user_company.id,
+        ))
+
+        shortage_items = [(item, item.quantity_required - item.quantity_scanned) for item in items if item.quantity_scanned < item.quantity_required]
+
+        for item, shortage_qty in shortage_items:
+            SalesOrderItem.objects.filter(pk=item.sales_order_item_id).update(
+                reserved_from_main=Greatest(F('reserved_from_main') - shortage_qty, 0)
+            )
+            if item.product_id:
+                from inventory.models import Product
+                Product.objects.filter(pk=item.product_id).update(
+                    reserved_quantity=Greatest(F('reserved_quantity') - shortage_qty, 0)
+                )
+            item.quantity_required = item.quantity_scanned
+            item.save(update_fields=['quantity_required'])
+
+        packing_order.is_partial = True
+        packing_order.status = PackingOrder.PackingStatus.PACKED
+        if request.user.is_authenticated:
+            packing_order.packed_by = request.user
+        packing_order.save(update_fields=['is_partial', 'status', 'packed_by'])
+
+        SalesOrder.objects.filter(pk=packing_order.order_id).update(
+            status=SalesOrder.SalesOrderStatus.PACKED
+        )
+
+        if action == 'create_backorder':
+            try:
+                with transaction.atomic():
+                    original_order = packing_order.order
+                    backorder = SalesOrder.objects.create(
+                        customer=original_order.customer,
+                        status=SalesOrder.SalesOrderStatus.IN_WAREHOUSE,
+                        notes=f'Backorder for {original_order.order_number}',
+                        company=user_company,
+                        created_by=original_order.created_by,
+                    )
+                    backorder.generate_order_number()
+                    for item, shortage_qty in shortage_items:
+                        SalesOrderItem.objects.create(
+                            order=backorder,
+                            product=item.product,
+                            quantity=shortage_qty,
+                            company=user_company,
+                        )
+                    backorder.calculate_value()
+                    backorder_created = True
+            except (ValidationError, Exception) as exc:
+                messages = getattr(exc, 'messages', None)
+                backorder_reason = messages[0] if messages else str(exc)
+                backorder_created = False
+
+    if action == 'create_backorder':
+        if backorder_created:
+            msg = 'Partial shipment completed. Backorder created for shortage quantities.'
+        else:
+            msg = f'Partial shipment completed. Backorder could not be created: {backorder_reason}'
+        return JsonResponse({'ok': True, 'backorder_created': backorder_created, 'message': msg})
+
+    return JsonResponse({'ok': True, 'message': 'Partial shipment completed.'})
 
 
 @login_required

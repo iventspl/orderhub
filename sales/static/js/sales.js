@@ -17,7 +17,18 @@ function getCookie(name) {
 }
 
 
-// Simple modal handling functions 
+
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div')
+    toast.className = `alert active ${type === 'error' ? 'err' : 'ok'}`
+    toast.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;min-width:260px;max-width:420px;'
+    toast.textContent = message
+    document.body.appendChild(toast)
+    setTimeout(() => toast.remove(), 4000)
+}
+
+
+// Simple modal handling functions
 
 function toggleCustomerForm(){
     const checkbox = document.querySelector('input[name="is_new_customer"]');
@@ -328,7 +339,8 @@ class SalesApp{
                             })
                             const result = await response.json()
                             if(!response.ok){
-                                throw new Error(result?.error || 'Network response was not ok')
+                                window.location.reload()
+                                return
                             }
                             if(result.ok){
                                 closeModal(`order-edit-modal-${orderId}`)
@@ -336,9 +348,25 @@ class SalesApp{
                             }
                         }catch(error){
                             console.error('Error deleting sales order:', error)
+                            window.location.reload()
                         }
                     })()
                 });
+            }
+
+            const clickedTransitionBtn = e.target.closest('.btn-transition')
+            if (clickedTransitionBtn) {
+                e.stopPropagation()
+                const orderId = clickedTransitionBtn.dataset.orderId
+                const action  = clickedTransitionBtn.dataset.action
+                if (action === 'assign_courier') {
+                    this._showCourierModal(orderId)
+                } else {
+                    const labels = { approve: 'approve', mark_packed: 'mark as packed', deliver: 'mark as delivered' }
+                    if (!confirm(`Are you sure you want to ${labels[action] ?? action} this order?`)) return
+                    this._postTransition(orderId, { action })
+                }
+                return
             }
 
             const clickedRow = e.target.closest('.clickable')
@@ -541,6 +569,76 @@ class SalesApp{
 
     _changeRowsToRender(no_rows){
         this._setQueryParamsAndReload({'rows': no_rows, 'page': 1});
+    }
+
+    async _postTransition(orderId, payload) {
+        try {
+            const response = await fetch(`/sales/transition/${orderId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: JSON.stringify(payload),
+            })
+            const result = await response.json()
+            if (!response.ok) throw new Error(result?.error || 'Request failed')
+            if (result.ok) window.location.reload()
+        } catch (err) {
+            showToast(err.message, 'error')
+        }
+    }
+
+    _showCourierModal(orderId) {
+        const modalId = `courier-modal-${orderId}`
+        document.getElementById(modalId)?.remove()
+
+        const carriers = [
+            ['UPS', 'UPS'], ['FEDEX', 'FedEx'], ['DHL', 'DHL'],
+            ['INPOST', 'InPost'], ['GLS', 'GLS'],
+            ['POCZTA POLSKA', 'Poczta Polska'], ['OTHER', 'Other'],
+        ]
+        const carrierOptions = carriers
+            .map(([val, label]) => `<option value="${val}">${label}</option>`)
+            .join('')
+
+        const html = `
+            <div id="${modalId}" class="modal-backdrop hidden">
+                <div class="modal" role="dialog" style="max-width:400px">
+                    <div class="modal-header">
+                        <h3 style="margin:0">Assign Courier</h3>
+                        <button class="btn btn-quiet" type="button" onclick="closeModal('${modalId}')">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <label>
+                            Carrier
+                            <select id="${modalId}-carrier">${carrierOptions}</select>
+                        </label>
+                        <label>
+                            Tracking number
+                            <input id="${modalId}-tracking" type="text" placeholder="e.g. 1Z999AA10123456784" />
+                        </label>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn" type="button" onclick="closeModal('${modalId}')">Cancel</button>
+                        <button class="btn btn-primary" id="${modalId}-confirm">Assign &amp; Ship</button>
+                    </div>
+                </div>
+            </div>`
+
+        document.body.insertAdjacentHTML('beforeend', html)
+        openModal(modalId)
+
+        document.getElementById(`${modalId}-confirm`).addEventListener('click', () => {
+            const carrier        = document.getElementById(`${modalId}-carrier`).value
+            const trackingNumber = document.getElementById(`${modalId}-tracking`).value.trim()
+            if (!trackingNumber) {
+                showToast('Tracking number is required.', 'error')
+                return
+            }
+            closeModal(modalId)
+            this._postTransition(orderId, { action: 'assign_courier', carrier, tracking_number: trackingNumber })
+        })
     }
 }
 

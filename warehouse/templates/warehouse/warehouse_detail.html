@@ -1,0 +1,143 @@
+{% extends "mainapp/base.html" %}
+{% load static %}
+{% block title %}{{ warehouse.name }} - Warehouse{% endblock title %}
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/warehouse.css' %}">
+{% endblock extra_css %}
+{% block content %}
+<section id="section-warehouse-detail" data-warehouse-id="{{ warehouse.id }}">
+
+    <div style="margin-bottom:12px;">
+        <a href="{% url 'warehouse:warehouse_list' %}" class="btn btn-sm btn-quiet">&larr; All warehouses</a>
+    </div>
+
+    <div class="card">
+
+        <!-- Header -->
+        <div class="card-header">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <h3 style="margin:0;">{{ warehouse.name }}</h3>
+                <span class="badge {% if warehouse.warehouse_type == 'MAIN' %}warehouse{% else %}shipped{% endif %}">
+                    {{ warehouse.get_warehouse_type_display }}
+                </span>
+            </div>
+            {% if can_edit %}
+            <div style="display:flex;gap:8px;align-items:center;">
+                <button id="wh-lock-btn" class="btn btn-sm" type="button">&#128274; Edit</button>
+                <button id="wh-save-btn" class="btn btn-primary btn-sm" type="button" disabled>Save changes</button>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Info fields -->
+        <div class="wh-info">
+            <div class="row-3" style="margin-bottom:12px;">
+                <label>
+                    Address
+                    <input class="wh-editable" type="text" name="address" value="{{ warehouse.address }}" readonly />
+                </label>
+                <label>
+                    City
+                    <input class="wh-editable" type="text" name="city" value="{{ warehouse.city }}" readonly />
+                </label>
+                <label>
+                    Country
+                    <input class="wh-editable" type="text" name="country" value="{{ warehouse.country }}" readonly />
+                </label>
+            </div>
+            <div class="row-3" style="margin-bottom:12px;">
+                <label>
+                    Zip code
+                    <input class="wh-editable" type="text" name="zip_code" value="{{ warehouse.zip_code }}" readonly />
+                </label>
+                <label>
+                    Capacity usage
+                    <input type="text" value="{{ warehouse.capacity_usage }}" readonly />
+                </label>
+                <label>
+                    Active zones
+                    <input type="text" value="{{ warehouse.active_zones }}" readonly />
+                </label>
+            </div>
+            <label>
+                Internal notes
+                <textarea class="warehouse-notes wh-editable" name="notes" rows="3" readonly>{{ warehouse.notes }}</textarea>
+            </label>
+        </div>
+
+        <!-- Products table -->
+        <div class="wh-products-header">
+            Products ({{ products.count }})
+        </div>
+
+        <div class="wh-search-bar">
+            <input id="wh-product-search" type="text" placeholder="Search SKU or name…"
+                   value="{{ search_query }}" />
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th data-sort="sku">SKU <span class="sort-indicator">{% if sort_by == 'sku' %}{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</span></th>
+                    <th data-sort="name">Product <span class="sort-indicator">{% if sort_by == 'name' %}{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</span></th>
+                    <th data-sort="reserved">Reserved <span class="sort-indicator">{% if sort_by == 'reserved' %}{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</span></th>
+                    <th data-sort="stock">Stock <span class="sort-indicator">{% if sort_by == 'stock' %}{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</span></th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in page_obj %}
+                <tr data-product-id="{{ product.id }}">
+                    <td>{{ product.sku }}</td>
+                    <td>{{ product.name }}</td>
+                    <td>
+                        <input type="number" value="{{ product.reserved_quantity }}" readonly />
+                    </td>
+                    <td>
+                        <input class="warehouse-stock-input wh-editable" type="number" min="0"
+                               value="{{ product.stock_quantity }}" readonly />
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-danger warehouse-delete-product" type="button" disabled>
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" style="text-align:center;padding:2rem;color:var(--muted);">
+                        No products assigned to this warehouse.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Pagination -->
+        <div class="pagination">
+            <span>Showing 1–{{ no_rows }} of {{ products.count }}</span>
+            <div class="pagination-controls">
+                <label>
+                    Show
+                    <select class="pagination-rows">
+                        <option value="10"  {% if no_rows == '10'  %}selected{% endif %}>10</option>
+                        <option value="25"  {% if no_rows == '25'  %}selected{% endif %}>25</option>
+                        <option value="50"  {% if no_rows == '50'  %}selected{% endif %}>50</option>
+                    </select>
+                </label>
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}&rows={{ no_rows }}&sort={{ sort_by }}&dir={{ sort_dir }}{% if search_query %}&search={{ search_query }}{% endif %}" class="btn btn-sm">Prev</a>
+                {% endif %}
+                <span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}&rows={{ no_rows }}&sort={{ sort_by }}&dir={{ sort_dir }}{% if search_query %}&search={{ search_query }}{% endif %}" class="btn btn-sm">Next</a>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</section>
+{% endblock content %}
+{% block extra_js %}
+    <script src="{% static 'js/warehouse.js' %}" defer></script>
+{% endblock extra_js %}

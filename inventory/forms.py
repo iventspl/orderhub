@@ -6,6 +6,7 @@ from customers.models import Customer
 
 class AddProductForm(forms.Form):
     def __init__(self,*args, **kwargs):
+        self.product_instance = kwargs.pop('product_instance', None)
         company_id = kwargs.pop('company_id', None)
         super().__init__(*args, **kwargs)
         if company_id:
@@ -21,14 +22,17 @@ class AddProductForm(forms.Form):
     price = forms.DecimalField(label='Price', max_digits=10, decimal_places=2, min_value=0, help_text='Price of the product')
     product_location = forms.ModelChoiceField(label='Warehouse Location', queryset=Warehouse.objects.all(), help_text='Select the warehouse location')
     bin_location = forms.CharField(label='Bin Location', max_length=255, required=False, help_text='Optional specific location within the warehouse')
+    product_image = forms.ImageField(label='Product Image', required=False, help_text='Optional image of the product', widget=forms.ClearableFileInput(attrs={'accept': 'image/*'}))
+    remove_image = forms.BooleanField(label='Remove current image', required=False)
 
     def clean(self):
         cleaned_data = super().clean()
         sku = cleaned_data.get('product_sku')
         location = cleaned_data.get('product_location')
 
-        # Validation depends on two fields, so it should be done at form level.
-        if sku and location and Product.objects.filter(sku=sku, product_location=location).exists():
-            self.add_error('product_sku', 'A product with this SKU already exists in the selected warehouse.')
+        # Only validate uniqueness when adding new product, not when editing
+        if sku and location and not self.product_instance:
+            if Product.objects.filter(sku=sku, product_location=location).exists():
+                self.add_error('product_sku', 'A product with this SKU already exists in the selected warehouse.')
 
         return cleaned_data

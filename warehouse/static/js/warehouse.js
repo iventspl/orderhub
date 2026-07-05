@@ -1,5 +1,17 @@
 'use strict';
 
+function showFlash(message, isSuccess = true) {
+	const content = document.getElementById('content');
+	if (!content || !message) return;
+	const existing = content.querySelector('.ajax-flash');
+	if (existing) existing.remove();
+	const el = document.createElement('div');
+	el.className = `alert active ajax-flash ${isSuccess ? 'ok' : 'err'}`;
+	el.textContent = message;
+	content.prepend(el);
+	setTimeout(() => el.remove(), 5000);
+}
+
 function getCookie(name) {
 	let cookieValue = null;
 	if (document.cookie && document.cookie !== '') {
@@ -20,7 +32,6 @@ class Warehouse {
 	#warehouseSelect = document.getElementById('wh-pick');
 	#warehousesMap = {};
 	#detailsModal = null;
-	#flashTimeout = null;
 
 	constructor() {
 		const mapScript = document.getElementById('warehouse-map');
@@ -96,29 +107,7 @@ class Warehouse {
 	}
 
 	showFlashMessage(message, isSuccess = true) {
-		const content = document.getElementById('content');
-		if (!content || !message) {
-			return;
-		}
-
-		const existingFlash = content.querySelector('.ajax-flash');
-		if (existingFlash) {
-			existingFlash.remove();
-		}
-
-		const alertEl = document.createElement('div');
-		alertEl.className = `alert active ajax-flash ${isSuccess ? 'ok' : 'err'}`;
-		alertEl.textContent = message;
-		content.prepend(alertEl);
-
-		if (this.#flashTimeout) {
-			window.clearTimeout(this.#flashTimeout);
-		}
-
-		this.#flashTimeout = window.setTimeout(() => {
-			alertEl.remove();
-			this.#flashTimeout = null;
-		}, 5000);
+		showFlash(message, isSuccess);
 	}
 
 	openDetailsModal(warehouseId) {
@@ -333,3 +322,126 @@ class Warehouse {
 new Warehouse();
 
 
+class WarehouseDetail {
+	#section = document.getElementById('section-warehouse-detail');
+	#lockBtn = document.getElementById('wh-lock-btn');
+	#saveBtn = document.getElementById('wh-save-btn');
+	#paginationRows = document.querySelector('.pagination-rows');
+	#warehouseId = null;
+	#locked = true;
+
+	constructor() {
+		if (!this.#section) return;
+
+		this.#warehouseId = this.#section.dataset.warehouseId;
+
+		this.#paginationRows?.addEventListener('change', (e) => {
+			const params = new URLSearchParams(window.location.search);
+			params.set('rows', e.target.value);
+			params.set('page', '1');
+			window.location.search = params.toString();
+		});
+
+		// Sort on header click — toggle dir if same column, default asc for new column
+		this.#section.querySelectorAll('th[data-sort]').forEach(th => {
+			th.addEventListener('click', () => {
+				const params = new URLSearchParams(window.location.search);
+				const field = th.dataset.sort;
+				const currentSort = params.get('sort');
+				const currentDir  = params.get('dir') || 'asc';
+				params.set('sort', field);
+				params.set('dir', currentSort === field && currentDir === 'asc' ? 'desc' : 'asc');
+				params.set('page', '1');
+				window.location.search = params.toString();
+			});
+		});
+
+		// Search — debounced, resets to page 1
+		const searchInput = document.getElementById('wh-product-search');
+		let searchTimer = null;
+		searchInput?.addEventListener('input', (e) => {
+			clearTimeout(searchTimer);
+			searchTimer = setTimeout(() => {
+				const params = new URLSearchParams(window.location.search);
+				if (e.target.value.trim()) {
+					params.set('search', e.target.value.trim());
+				} else {
+					params.delete('search');
+				}
+				params.set('page', '1');
+				window.location.search = params.toString();
+			}, 400);
+		});
+
+		this.#lockBtn?.addEventListener('click', () => {
+			this.#locked = !this.#locked;
+			this._setEditMode(!this.#locked);
+		});
+
+		this.#saveBtn?.addEventListener('click', () => this._save());
+
+		this.#section.addEventListener('click', async (e) => {
+			const deleteBtn = e.target.closest('.warehouse-delete-product');
+			if (!deleteBtn || this.#locked) return;
+
+			const row = deleteBtn.closest('tr[data-product-id]');
+			if (!row) return;
+
+			const productId = row.dataset.productId;
+			const sku = row.querySelector('td')?.textContent.trim() || '';
+			if (!confirm(`Delete product ${sku} from this warehouse?`)) return;
+
+			try {
+				const response = await fetch(`/warehouse/${this.#warehouseId}/product/${productId}/delete/`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+				});
+				const result = await response.json();
+				if (!response.ok) throw new Error(result?.error || 'Failed to delete product.');
+				row.remove();
+				showFlash(result?.message || 'Product deleted.');
+			} catch (error) {
+				showFlash(error.message || 'Error deleting product.', false);
+			}
+		});
+	}
+
+	_setEditMode(editable) {
+		this.#lockBtn.textContent = editable ? '🔓 Edit' : '🔒 Edit';
+		this.#saveBtn.disabled = !editable;
+		this.#section.querySelectorAll('.wh-editable').forEach(el => {
+			if (editable) el.removeAttribute('readonly');
+			else el.setAttribute('readonly', '');
+		});
+		this.#section.querySelectorAll('.warehouse-delete-product').forEach(btn => {
+			btn.disabled = !editable;
+		});
+	}
+
+	async _save() {
+		const products = [];
+		this.#section.querySelectorAll('tbody tr[data-product-id]').forEach(row => {
+			const stockInput = row.querySelector('.warehouse-stock-input');
+			products.push({ id: Number(row.dataset.productId), stock_quantity: stockInput?.value || '0' });
+		});
+
+		const notes = this.#section.querySelector('.warehouse-notes')?.value || '';
+
+		try {
+			const response = await fetch(`/warehouse/${this.#warehouseId}/edit/`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+				body: JSON.stringify({ notes, products }),
+			});
+			const result = await response.json();
+			if (!response.ok) throw new Error(result?.error || 'Failed to save.');
+			this.#locked = true;
+			this._setEditMode(false);
+			showFlash(result?.message || 'Warehouse updated successfully.');
+		} catch (error) {
+			showFlash(error.message || 'Error saving.', false);
+		}
+	}
+}
+
+new WarehouseDetail();

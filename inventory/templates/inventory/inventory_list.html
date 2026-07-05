@@ -12,7 +12,7 @@
             <div class="card-header">
                 <h3>Inventory</h3>
                 <div class="toolbar">
-                    <input id="inv-search" type="text" placeholder="Search SKU, name, category…" />
+                    <input id="inv-search" type="text" placeholder="Search SKU, name, category…" value="{{ search_query }}" />
                     <button class="btn btn-primary btn-sm"
                             id="inv-new"
                             type="button"
@@ -21,18 +21,27 @@
             <table>
                 <thead>
                     <tr>
-                        <th>SKU</th>
-                        <th>Product</th>
-                        <th>Category</th>
-                        <th>Price</th>
-                        <th>Store</th>
-                        <th>Warehouse</th>
-                        <th>Reserved</th>
+                        <th>Image</th>
+                        <th data-sort="sku">SKU <span class="sort-indicator">{% if sort_by == 'sku' %}{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</span></th>
+                        <th data-sort="name">Product <span class="sort-indicator">{% if sort_by == 'name' %}{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</span></th>
+                        <th data-sort="category">Category <span class="sort-indicator">{% if sort_by == 'category' %}{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</span></th>
+                        <th data-sort="price">Price <span class="sort-indicator">{% if sort_by == 'price' %}{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</span></th>
+                        <th data-sort="store">Store <span class="sort-indicator">{% if sort_by == 'store' %}{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</span></th>
+                        <th data-sort="warehouse">Warehouse <span class="sort-indicator">{% if sort_by == 'warehouse' %}{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</span></th>
+                        <th data-sort="reserved">Reserved <span class="sort-indicator">{% if sort_by == 'reserved' %}{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</span></th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody class="card-body">
-                    {% for product in products %}
+                    {% for product in page_obj %}
                     <tr class="clickable">
+                        <td>
+                            {% if product.product_image %}
+                                <img src="{{ product.product_image.url }}" alt="{{ product.name }}" class="product-image">
+                            {% else %}
+                                <span>No image</span>
+                            {% endif %}
+                        </td>
                         <td>{{ product.sku }}</td>
                         <td>{{ product.name }}</td>
                         <td>{{ product.get_category_display }}</td>
@@ -40,10 +49,44 @@
                         <td>{{ product.get_store_quantity }}</td>
                         <td>{{ product.get_main_quantity }}</td>
                         <td>{{ product.reserved_quantity }}</td>
+                        <td>
+                            {% if can_edit %}
+                            <button class="btn btn-quiet" id="edit-btn" data-productId="{{product.id}}" data-sku="{{product.sku}}" data-name="{{product.name}}" data-price="{{product.price}}" data-category="{{product.category}}" data-stock="{{product.stock_quantity}}" data-warehouse="{{product.product_location.id}}" data-description="{{product.description}}" data-binlocation="{{product.bin_location}}" data-image="{% if product.product_image %}{{ product.product_image.url }}{% endif %}">Edit</button>
+                            <form method="post" action="{% url 'inventory:delete_product' product.id %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-quiet">Delete</button>
+                            </form>
+                            {% endif %}
+                        </td>
                     </tr>
-                {% endfor %}
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" style="text-align:center; padding: 2rem; color: var(--muted);">No products found.</td>
+                    </tr>
+                    {% endfor %}
                 </tbody>
             </table>
+
+            <div class="pagination">
+                <span>Showing 1–{{ no_rows }} of {{ products.count }}</span>
+                <div class="pagination-controls">
+                    <label>
+                        Show
+                        <select name="no_rows" class="pagination-rows">
+                            <option value="10" {% if no_rows == '10' %}selected{% endif %}>10</option>
+                            <option value="25" {% if no_rows == '25' %}selected{% endif %}>25</option>
+                            <option value="50" {% if no_rows == '50' %}selected{% endif %}>50</option>
+                        </select>
+                    </label>
+                    {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}&rows={{ no_rows }}&sort={{ sort_by }}&dir={{ sort_dir }}{% if search_query %}&search={{ search_query }}{% endif %}" class="btn btn-sm">Prev</a>
+                    {% endif %}
+                    <span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}&rows={{ no_rows }}&sort={{ sort_by }}&dir={{ sort_dir }}{% if search_query %}&search={{ search_query }}{% endif %}" class="btn btn-sm">Next</a>
+                    {% endif %}
+                </div>
+            </div>
         </div>
 
         <!-- modals -->
@@ -53,53 +96,31 @@
                     <h3>Add new product</h3>
                     <button class="btn btn-quiet" onclick="closeModal('inventory-create-modal')">&times;</button>
                 </div>
-                <form method="post" action="{% url 'inventory:add_product' %}">
+                <form method="post" action="{% url 'inventory:add_product' %}" enctype="multipart/form-data">
                     {% csrf_token %}
                     <div class="modal-body">
-                        <div class="row-3">
-                            <label>
-                                {{ form.product_sku.label }}
-                                {{ form.product_sku }} 
-                            </label>
-                            <label>
-                                {{ form.product_name.label }}
-                                {{ form.product_name }}
-                            </label>
-                            <label>
-                                {{ form.product_category.label }}
-                                {{ form.product_category }}
-                            </label>
-                        </div>
-                        <div class="row-2">
-                            
-                            <label>
-                                {{ form.price.label }}
-                                {{ form.price }}
-                            </label>
-                            <label>
-                                {{ form.stock_quantity.label }}
-                                {{ form.stock_quantity }}
-                            </label>
-                        </div>
-                        <div class="row-2">
-                            <label>
-                                {{ form.product_location.label }}
-                                {{ form.product_location }}
-                            </label>
-                            <label>
-                                {{ form.bin_location.label }}
-                                {{ form.bin_location }}
-                            </label>
-                        </div>
-
-                        <label>
-                            {{ form.product_description.label }}
-                            {{ form.product_description }}
-                        </label>
-
+                        {% include "inventory/_product_form_fields.html" with is_edit=False %}
                     </div>
                     <div class="modal-footer">
                         <button type="submit" class="btn btn-primary">Add product</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="inventory-edit-modal" class="modal-backdrop hidden">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3>Edit product</h3>
+                    <button class="btn btn-quiet" onclick="closeModal('inventory-edit-modal')">&times;</button>
+                </div>
+                <form method="post"  enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        {% include "inventory/_product_form_fields.html" with is_edit=True %}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Save changes</button>
                     </div>
                 </form>
             </div>

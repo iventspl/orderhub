@@ -30,36 +30,23 @@
                     <button class="btn btn-sm" id="wh-history">Transfer history</button>
                 </div>
             </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>NAME</th>
-                        <th>ADDRESS</th>
-                        <th>CITY</th>
-                        <th>ZIP CODE</th>
-                        <th>COUNTRY</th>
-                        <th>NOTES</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for warehouse in warehouses %}
-                        <tr class="clickable">
-                            <td>{{ warehouse.name }}</td>
-                            <td>{{ warehouse.address }}</td>
-                            <td>{{ warehouse.city }}</td>
-                            <td>{{ warehouse.zip_code }}</td>
-                            <td>{{ warehouse.country }}</td>
-                            <td class="muted small">{{ warehouse.notes|truncatechars:50 }}</td>
-                            <td>
-                                <button class="btn btn-sm wh-details-btn"
-                                        type="button"
-                                        data-warehouse-id="{{ warehouse.id }}">Details</button>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="dash-grid" style="padding: 16px;">
+                {% for warehouse in warehouses %}
+                    <a class="dash-card" href="{% url 'warehouse:warehouse_detail' warehouse.id %}">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+                            <h4 style="margin:0; font-size:15px;">{{ warehouse.name }}</h4>
+                            <span class="badge {% if warehouse.warehouse_type == 'MAIN' %}warehouse{% else %}shipped{% endif %}">
+                                {{ warehouse.get_warehouse_type_display }}
+                            </span>
+                        </div>
+                        <p style="margin:0 0 4px; font-size:13px; color:var(--muted);">{{ warehouse.city }}{% if warehouse.country %}, {{ warehouse.country }}{% endif %}</p>
+                        <p style="margin:0 0 4px; font-size:13px; color:var(--muted);">{{ warehouse.address }}</p>
+                        <p style="margin: 10px 0 0; font-size:12px; font-weight:600;">{{ warehouse.product_count }} product{{ warehouse.product_count|pluralize }}</p>
+                    </a>
+                {% empty %}
+                    <p class="muted" style="padding:8px 0;">No warehouses found.</p>
+                {% endfor %}
+            </div>
         </div>
     </section>
     <!-- ============================================================
@@ -183,7 +170,6 @@
             </form>
         </div>
     </div>
-    <script id="warehouse-map" type="application/json">{{ warehouses_map_json|safe }}</script>
 {% endblock content %}
 {% block extra_js %}
     <script src="{% static 'js/warehouse.js' %}" defer></script>

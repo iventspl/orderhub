@@ -212,6 +212,7 @@
                     </div>
 
                     <div class="actions full-width">
+                        {% if can_edit %}
                         <button class="btn edit-btn" data-order-id="{{ order.id }}"
                                             data-order-status="{{ order.status }}"
                                             data-order-number="{{ order.order_number|default:order.id }}"
@@ -219,10 +220,19 @@
                                             data-payment="{{ order.get_payment_method_display }}"
                                             data-notes="{{ order.notes }}"
                                             data-is-editable="{% if order.status == 'DELIVERED' %}False{% else %}True{% endif %}">Edit order</button>
-                        <button class="btn">Approve</button>
-                        <button class="btn">Mark Packed</button>
-                        <button class="btn">Assign Courier</button>
-                        <button class="btn btn-primary">Deliver</button>
+                        {% if order.status == 'DRAFT' %}
+                            <button class="btn btn-transition" data-order-id="{{ order.id }}" data-action="approve">Approve</button>
+                        {% endif %}
+                        {% if order.status == 'IN WAREHOUSE' %}
+                            <button class="btn btn-transition" data-order-id="{{ order.id }}" data-action="mark_packed">Mark Packed</button>
+                        {% endif %}
+                        {% if order.status == 'PACKED' %}
+                            <button class="btn btn-transition" data-order-id="{{ order.id }}" data-action="assign_courier">Assign Courier</button>
+                        {% endif %}
+                        {% if order.status == 'SHIPPED' %}
+                            <button class="btn btn-primary btn-transition" data-order-id="{{ order.id }}" data-action="deliver">Deliver</button>
+                        {% endif %}
+                        {% endif %}
                     </div>
                 </div>
             </div>

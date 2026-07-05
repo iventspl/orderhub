@@ -267,10 +267,105 @@ class PackingApp {
                 return
             }
 
+            if (data.partial && data.shortage?.length) {
+                closeModal(`packing-modal-${orderId}`)
+                this._showPartialModal(orderId, data.shortage)
+                return
+            }
+
             window.location.reload()
         } catch (_error) {
             this._showError(modal, 'Unexpected error while completing packing.')
         }
+    }
+
+    _showPartialModal(orderId, shortage) {
+        const rows = shortage.map(s => `
+            <tr>
+                <td>${s.sku}</td>
+                <td>${s.name}</td>
+                <td>${s.required}</td>
+                <td>${s.scanned}</td>
+                <td>${s.required - s.scanned}</td>
+            </tr>`).join('')
+
+        const html = `
+            <div id="partial-modal-${orderId}" class="modal-backdrop hidden">
+                <div class="modal" role="dialog">
+                    <div class="modal-header">
+                        <h3 style="margin:0">Shortage detected</h3>
+                        <button class="btn btn-quiet" onclick="closeModal('partial-modal-${orderId}')">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Some items were not fully scanned. How would you like to proceed?</p>
+                        <table>
+                            <thead>
+                                <tr><th>SKU</th><th>Product</th><th>Required</th><th>Scanned</th><th>Short</th></tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                        <div class="alert err" id="partial-modal-err-${orderId}"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn" onclick="closeModal('partial-modal-${orderId}')">Continue packing</button>
+                        <button type="button" class="btn btn-warning" id="partial-ship-${orderId}">Ship partial</button>
+                        <button type="button" class="btn btn-primary" id="partial-backorder-${orderId}">Create backorder</button>
+                    </div>
+                </div>
+            </div>`
+
+        document.body.insertAdjacentHTML('beforeend', html)
+
+        document.getElementById(`partial-ship-${orderId}`)?.addEventListener('click', () => {
+            this._submitPartial(orderId, 'ship_partial')
+        })
+        document.getElementById(`partial-backorder-${orderId}`)?.addEventListener('click', () => {
+            this._submitPartial(orderId, 'create_backorder')
+        })
+
+        openModal(`partial-modal-${orderId}`)
+    }
+
+    async _submitPartial(orderId, action) {
+        try {
+            const response = await fetch(`/packing/${orderId}/complete-partial/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this._getCsrfToken(),
+                },
+                body: JSON.stringify({ action }),
+            })
+
+            const data = await response.json()
+            if (!response.ok || !data.ok) {
+                const errBox = document.getElementById(`partial-modal-err-${orderId}`)
+                if (errBox) {
+                    errBox.textContent = data.error || 'Could not complete partial shipment.'
+                    errBox.classList.add('active')
+                }
+                return
+            }
+
+            closeModal(`partial-modal-${orderId}`)
+            this._showToast(data.message || 'Partial shipment completed.')
+            setTimeout(() => location.reload(), 1800)
+        } catch (_error) {
+            const errBox = document.getElementById(`partial-modal-err-${orderId}`)
+            if (errBox) {
+                errBox.textContent = 'Unexpected error.'
+                errBox.classList.add('active')
+            }
+        }
+    }
+
+    _showToast(message, type = 'success') {
+        const el = document.createElement('div')
+        el.className = `alert active ${type === 'error' ? 'err' : 'ok'}`
+        el.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;min-width:260px;max-width:420px;'
+        el.textContent = message
+        document.body.appendChild(el)
+        setTimeout(() => el.remove(), 4000)
     }
 
     async _shipPacking(orderId) {
