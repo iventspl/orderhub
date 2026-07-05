@@ -4,6 +4,18 @@ from mainapp.models import Logger
 
 register = template.Library()
 
+
+@register.filter
+def status_badge_class(status):
+    return {
+        'DRAFT':        'draft',
+        'IN WAREHOUSE': 'warehouse',
+        'PACKED':       'packed',
+        'SHIPPED':      'shipped',
+        'DELIVERED':    'delivered',
+        'CANCELLED':    'awaiting',
+    }.get(status, '')
+
 @register.simple_tag
 def get_logger_entries_for_order(order):
     """

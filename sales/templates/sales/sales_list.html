@@ -37,20 +37,6 @@
                             <option value="paid">Paid</option>
                         </select>
                     </label>
-
-                    <label>
-                    Sort by
-                    <select name="sort_by" id="o-sort">
-                            <option value="created_on">Date</option>
-                            <option value="order_number">Order #</option>
-                            <option value="customer">Customer</option>
-                            <option value="value">Value</option>
-                            <option value="status">Status</option>
-                        </select>
-                    </label>
-
-                    <button class="btn btn-sm" id="o-dir" data-dir="asc">↓</button>
-
                 </div>
 
                 <div class="controls">
@@ -82,187 +68,161 @@
             
 
     </div>
-    <div class="orders-header order-row">
-        <div class="orders-header-col">Order # / Date</div>
-        <div class="orders-header-col">Customer</div>
-        <div class="orders-header-col">Tracking</div>
-        <div class="orders-header-col">Value</div>
-        <div class="orders-header-col">Status</div>
-    </div>
-    {% for order in page_obj %}
-        <!-- Order row -->
-        <div class="order-row clickable" data-id="{{ order.id }}">
-            <div class="order-col">
-                <div class="order-number">{{ order.order_number }}</div>
-                <div class="order-date">{{ order.created_on|date:"Y-m-d" }}</div>
-            </div>
-
-            <div class="order-col">
-                <div class="customer-name">{{ order.customer.get_full_name }}</div>
-                <div class="customer-location">{{ order.customer.city }}</div>
-            </div>
-
-            <div class="order-col">
-                {% if order.tracking %}
-                    <div class="order-carrier">{{ order.tracking.carrier }}</div>
-                    <div class="order-tracking">{{ order.tracking.tracking_number }}</div>
-                {% else %}
-                    <div class="order-carrier">No tracking</div>
-                {% endif %}
-            </div>
-
-            <div class="order-col">
-                <div class="order-value">€{{ order.value }}</div>
-            </div>
-
-            <div class="order-col">
-                <div class="order-status">{{ order.status }}</div>
-            </div>
-        </div>
-        <!-- Expanded order details -->
-        <div class="order-panel expand-row" data-id="{{ order.id }}">
-            <div class="order-card">
-                <div class="order-header">
-                    <div>
-                        <p class="muted">Order details</p>
-                        <h4 class="order-title">{{ order.order_number }}</h4>
-                    </div>
-
-                    <span class="status-badge">{{ order.status }}</span>
-                </div>
-
-                <div class="details-grid">
-                    <div>
-                        <p class="muted">Customer</p>
-                        <p class="value">{{ order.customer.get_full_name }} </p>
-                    </div>
-
-                    <div>
-                        <p class="muted">Sales person</p>
-                        <p class="value">{{ order.created_by.get_full_name }} <span class="muted">({{ order.created_by.profile.email }})</span></p>
-                    </div>
-
-                    <div>
-                        <p class="muted">Due date</p>
-                        <p class="value">{{ order.due_date }}</p>
-                    </div>
-
-                    <div>
-                        <p class="muted">Payment</p>
-                        <p class="value">{{ order.get_payment_method_display }}</p>
-                    </div>
-
-                    <div>
-                        <p class="muted">Delivery address</p>
-                        <p class="value">{{ order.ship_address }}</p>
-                    </div>
-
-                    <div>
-                        <p class="muted">Items</p>
-                        {% for item in order.salesorderitem_set.all %}
-                            <span>{{ item.resolved_name }} [x{{ item.quantity }}]
-                                {% if not forloop.last %},{% endif %}
-                            </span>
-                        {% endfor %}
-                    </div>
-
-                    <div>
-                        <p class="muted">Tracking</p>
-                        {% if order.tracking %}
-                            <p class="value">{{ order.tracking.tracking_number }} <span class="muted">({{ order.tracking.carrier }})</span></p>
-                        {% else %}
-                            <p class="value">no tracking number</p>
-                        {% endif %}
-                    </div>
-
-                    <div class="full-width">
-                        <p class="muted">Notes</p>
-                        <p class="value">{{ order.notes }}</p>
-                    </div>
-
-                    <div class="full-width">
-                        <p class="muted">Activity timeline</p>
-                        {% get_logger_entries_for_order order as logger_entries %}
-                            {% if logger_entries %}
-                                <div class="activity-timeline">
-                                    {% for log in logger_entries %}
-                                        <div class="info-box activity-entry">
-                                            <span class="timestamp">{{ log.timestamp|date:"Y-m-d H:i" }}</span>:
-                                            <span class="action">{{ log.action }}</span>
-                                            <span class="user">by {{ log.user.get_full_name }} ({{ log.user.profile.email }})</span>
-                                        </div>
+    <table>
+        <thead>
+            <tr>
+                <th data-sort="created_on">Order # / Date <span class="sort-indicator">{% if sort_by == 'created_on' %}{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</span></th>
+                <th data-sort="customer">Customer <span class="sort-indicator">{% if sort_by == 'customer' %}{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</span></th>
+                <th>Tracking</th>
+                <th data-sort="value">Value <span class="sort-indicator">{% if sort_by == 'value' %}{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</span></th>
+                <th data-sort="status">Status <span class="sort-indicator">{% if sort_by == 'status' %}{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</span></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in page_obj %}
+            <tr class="clickable" data-id="{{ order.id }}">
+                <td>
+                    <div class="order-number">{{ order.order_number }}</div>
+                    <div class="order-date small muted">{{ order.created_on|date:"Y-m-d" }}</div>
+                </td>
+                <td>
+                    <div class="customer-name">{{ order.customer.get_full_name }}</div>
+                    <div class="small muted">{{ order.customer.city }}</div>
+                </td>
+                <td>
+                    {% if order.tracking %}
+                        <div>{{ order.tracking.carrier }}</div>
+                        <div class="small muted">{{ order.tracking.tracking_number }}</div>
+                    {% else %}
+                        <span class="muted">—</span>
+                    {% endif %}
+                </td>
+                <td><strong>€{{ order.value }}</strong></td>
+                <td><span class="badge {{ order.status|status_badge_class }}">{{ order.status }}</span></td>
+            </tr>
+            <tr class="expand-row" data-id="{{ order.id }}">
+                <td colspan="5">
+                    <div class="order-card">
+                        <div class="order-header">
+                            <div>
+                                <p class="muted">Order details</p>
+                                <h4 class="order-title">{{ order.order_number }}</h4>
+                            </div>
+                            <span class="badge {{ order.status|status_badge_class }}">{{ order.status }}</span>
+                        </div>
+                        <div class="details-grid">
+                            <div>
+                                <p class="muted">Customer</p>
+                                <p class="value">{{ order.customer.get_full_name }}</p>
+                            </div>
+                            <div>
+                                <p class="muted">Sales person</p>
+                                <p class="value">{{ order.created_by.get_full_name }} <span class="muted">({{ order.created_by.profile.email }})</span></p>
+                            </div>
+                            <div>
+                                <p class="muted">Due date</p>
+                                <p class="value">{{ order.due_date }}</p>
+                            </div>
+                            <div>
+                                <p class="muted">Payment</p>
+                                <p class="value">{{ order.get_payment_method_display }}</p>
+                            </div>
+                            <div>
+                                <p class="muted">Delivery address</p>
+                                <p class="value">{{ order.ship_address }}</p>
+                            </div>
+                            <div>
+                                <p class="muted">Items</p>
+                                <p class="value">
+                                    {% for item in order.salesorderitem_set.all %}
+                                        {{ item.resolved_name }} ×{{ item.quantity }}{% if not forloop.last %}, {% endif %}
                                     {% endfor %}
-                                </div>
-                            {% else %}
-                                <div class="info-box">
-                                No status changes recorded yet.
-                                </div>
-                            {% endif %}
-                    </div>
-
-                    <div class="full-width">
-                        <div class="section-title">
-                        <span>🕒</span>
-                        <span>Version history</span>
-                        </div>
-
-                        <div class="info-box">
-                        No previous edit snapshots yet.
-                        </div>
-                    </div>
-
-                    <div class="actions full-width">
-                        {% if can_edit %}
-                        <button class="btn edit-btn" data-order-id="{{ order.id }}"
+                                </p>
+                            </div>
+                            <div>
+                                <p class="muted">Tracking</p>
+                                {% if order.tracking %}
+                                    <p class="value">{{ order.tracking.tracking_number }} <span class="muted">({{ order.tracking.carrier }})</span></p>
+                                {% else %}
+                                    <p class="value muted">No tracking number</p>
+                                {% endif %}
+                            </div>
+                            <div class="full-width">
+                                <p class="muted">Notes</p>
+                                <p class="value">{{ order.notes|default:"—" }}</p>
+                            </div>
+                            <div class="full-width">
+                                <p class="muted" style="margin-bottom:8px">Activity timeline</p>
+                                {% get_logger_entries_for_order order as logger_entries %}
+                                {% if logger_entries %}
+                                    <div class="activity-timeline">
+                                        {% for log in logger_entries %}
+                                            <div class="info-box activity-entry">
+                                                <span class="timestamp">{{ log.timestamp|date:"Y-m-d H:i" }}</span>:
+                                                <span class="action">{{ log.action }}</span>
+                                                <span class="user">by {{ log.user.get_full_name }} ({{ log.user.profile.email }})</span>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <div class="info-box">No status changes recorded yet.</div>
+                                {% endif %}
+                            </div>
+                            <div class="actions full-width">
+                                {% if can_edit %}
+                                    <button class="btn edit-btn"
+                                            data-order-id="{{ order.id }}"
                                             data-order-status="{{ order.status }}"
                                             data-order-number="{{ order.order_number|default:order.id }}"
                                             data-customer="{{ order.customer.get_full_name }}"
                                             data-payment="{{ order.get_payment_method_display }}"
                                             data-notes="{{ order.notes }}"
                                             data-is-editable="{% if order.status == 'DELIVERED' %}False{% else %}True{% endif %}">Edit order</button>
-                        {% if order.status == 'DRAFT' %}
-                            <button class="btn btn-transition" data-order-id="{{ order.id }}" data-action="approve">Approve</button>
-                        {% endif %}
-                        {% if order.status == 'IN WAREHOUSE' %}
-                            <button class="btn btn-transition" data-order-id="{{ order.id }}" data-action="mark_packed">Mark Packed</button>
-                        {% endif %}
-                        {% if order.status == 'PACKED' %}
-                            <button class="btn btn-transition" data-order-id="{{ order.id }}" data-action="assign_courier">Assign Courier</button>
-                        {% endif %}
-                        {% if order.status == 'SHIPPED' %}
-                            <button class="btn btn-primary btn-transition" data-order-id="{{ order.id }}" data-action="deliver">Deliver</button>
-                        {% endif %}
-                        {% endif %}
+                                    {% if order.status == 'DRAFT' %}
+                                        <button class="btn btn-transition" data-order-id="{{ order.id }}" data-action="approve">Approve</button>
+                                    {% endif %}
+                                    {% if order.status == 'IN WAREHOUSE' %}
+                                        <button class="btn btn-transition" data-order-id="{{ order.id }}" data-action="mark_packed">Mark Packed</button>
+                                    {% endif %}
+                                    {% if order.status == 'PACKED' %}
+                                        <button class="btn btn-transition" data-order-id="{{ order.id }}" data-action="assign_courier">Assign Courier</button>
+                                    {% endif %}
+                                    {% if order.status == 'SHIPPED' %}
+                                        <button class="btn btn-primary btn-transition" data-order-id="{{ order.id }}" data-action="deliver">Deliver</button>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
-</div>
-
-    {% endfor %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" style="text-align:center; padding:2rem; color:var(--muted);">No orders found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 
     <div class="pagination">
         <span>Showing 1–{{ no_rows }} of {{ sales_orders.count }}</span>
-
-      <div class="pagination-controls">
-        <label>
-          Show
-            <select name="no_rows" class="pagination-rows">
-                <option value="10" {% if no_rows == '10' %}selected{% endif %}>10</option>
-                <option value="25" {% if no_rows == '25' %}selected{% endif %}>25</option>
-                <option value="50" {% if no_rows == '50' %}selected{% endif %}>50</option>
-            </select>
-        </label>
-
-        {% if page_obj.has_previous %}
-                        <a href="?page={{ page_obj.previous_page_number }}&rows={{ no_rows }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}{% if sort_dir %}&sort_dir={{ sort_dir }}{% endif %}"
-                           class="btn btn-sm">Prev</a>
-                    {% endif %}
-                    <span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-                    {% if page_obj.has_next %}
-                        <a href="?page={{ page_obj.next_page_number }}&rows={{ no_rows }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}{% if sort_dir %}&sort_dir={{ sort_dir }}{% endif %}"
-                           class="btn btn-sm">Next</a>
-                    {% endif %}
-      </div>
+        <div class="pagination-controls">
+            <label>
+                Show
+                <select name="no_rows" class="pagination-rows">
+                    <option value="10" {% if no_rows == '10' %}selected{% endif %}>10</option>
+                    <option value="25" {% if no_rows == '25' %}selected{% endif %}>25</option>
+                    <option value="50" {% if no_rows == '50' %}selected{% endif %}>50</option>
+                </select>
+            </label>
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}&rows={{ no_rows }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_by %}&sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}" class="btn btn-sm">Prev</a>
+            {% endif %}
+            <span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}&rows={{ no_rows }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_by %}&sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}" class="btn btn-sm">Next</a>
+            {% endif %}
+        </div>
     </div>
 
   </div>
@@ -340,10 +300,9 @@
                         </label>
                     </div>
                     <div class="search_product">
-                        <input type="text" id="search_product" placeholder="Search product…" />
-                        <div class="search_results">
-
-                        </div>
+                        <input type="text" id="search_product" placeholder="Search product by name or SKU…" autocomplete="off" />
+                        <button type="button" class="search_product-clear" id="search_product-clear" title="Clear">&times;</button>
+                        <div class="search_results" id="search_results"></div>
                     </div>
                     <div id="order-items">
                         {% for item_form in formset %}
@@ -380,6 +339,10 @@
                     </div>
                     <div id="customer_shippement_addres" class="hidden">
                         <div class="modal-new-customer-shippement">
+                            <label class="modal-checkbox">
+                                <input type="checkbox" id="use-customer-address" />
+                                Use customer address
+                            </label>
                             <div class="row">
                                 <label>
                                     First Name
@@ -439,6 +402,7 @@
         </div>
     </div>
     <script id="order-items-map" type="application/json">{{ order_items_map_json|safe }}</script>
+    <script id="customer-address-map" type="application/json">{{ customer_address_map_json|safe }}</script>
 {% endblock content %}
 {% block extra_js %}
     <script src="{% static 'js/sales.js' %}" defer></script>

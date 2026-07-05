@@ -114,19 +114,19 @@ document.addEventListener('DOMContentLoaded', () => {
 class SalesApp{
     #search = document.getElementById('o-search');
     #searchProduct = document.getElementById('search_product');
-    #searchResultsContainer = document.querySelector('.search_results');
+    #searchResultsContainer = document.getElementById('search_results');
+    #searchClearBtn = document.getElementById('search_product-clear');
     #byStatus = document.querySelector('#o-status');
     #statusFilters = document.querySelector('.filters');
-    #sortSelect = document.getElementById('o-sort');
-    #sortDirBtn = document.getElementById('o-dir');
     #resetBtn = document.getElementById('reset-filters');
     #salesBody = document.querySelector('.orders-container')
-    #rows = document.querySelectorAll('.clickable')
-    #expandedRows = document.querySelectorAll('.expand-row')
+    #rows = document.querySelectorAll('tr.clickable')
+    #expandedRows = document.querySelectorAll('tr.expand-row')
     #paginationRows = document.querySelector('.pagination-rows')
     #ship_to_select = document.getElementById('id_ship_to')
     #editModal = null;
     #orderItemsMap = {}
+    #customerAddressMap = {}
     constructor(){
         this._restoreControlsFromUrl();
         const itemsMapScript = document.getElementById('order-items-map')
@@ -138,10 +138,48 @@ class SalesApp{
             }
         }
 
-        const params = new URLSearchParams(window.location.search);
-        const initialDir = params.get('sort_dir') ?? 'asc';
-        this.#sortDirBtn.dataset.dir = initialDir;
-        this.#sortDirBtn.textContent = initialDir === 'asc' ? '↓' : '↑';
+        const addrMapScript = document.getElementById('customer-address-map')
+        if (addrMapScript?.textContent) {
+            try {
+                this.#customerAddressMap = JSON.parse(addrMapScript.textContent)
+            } catch (_error) {
+                this.#customerAddressMap = {}
+            }
+        }
+
+        document.getElementById('use-customer-address')?.addEventListener('change', (e) => {
+            if (!e.target.checked) return
+            const customerId = document.getElementById('id_customer')?.value
+            const addr = this.#customerAddressMap[customerId]
+            if (!addr) return
+            const form = document.getElementById('order-modal')
+            const fill = (nc, val) => {
+                const el = form?.querySelector(`[data-nc="${nc}"]`)
+                if (el) el.value = val
+            }
+            fill('shipFirstName', addr.firstName)
+            fill('shipLastName',  addr.lastName)
+            fill('shipEmail',     addr.email)
+            fill('shipPhone',     addr.phone)
+            fill('shipAddress',   addr.address)
+            fill('shipZipCode',   addr.zipCode)
+            fill('shipCity',      addr.city)
+            fill('shipState',     addr.state)
+            fill('shipCountry',   addr.country)
+        })
+
+        document.querySelectorAll('[data-sort]').forEach(col => {
+            col.addEventListener('click', () => {
+                const params = new URLSearchParams(window.location.search)
+                const field = col.dataset.sort
+                const currentSort = params.get('sort')
+                const currentDir  = params.get('dir') || 'asc'
+                params.set('sort', field)
+                params.set('dir', currentSort === field && currentDir === 'asc' ? 'desc' : 'asc')
+                params.set('page', '1')
+                window.location.search = params.toString()
+            })
+        })
 
         this.#salesBody.addEventListener('click', (e)=>{
 
@@ -369,8 +407,8 @@ class SalesApp{
                 return
             }
 
-            const clickedRow = e.target.closest('.clickable')
-            if(!clickedRow) return
+            const clickedRow = e.target.closest('tr.clickable')
+            if(!clickedRow || e.target.closest('tr.expand-row')) return
 
             const expandedInfo = document.querySelector(`.expand-row[data-id="${clickedRow.dataset.id}"]`)
             const isAlreadyOpen = clickedRow.classList.contains('expanded')
@@ -406,25 +444,6 @@ class SalesApp{
             this._setQueryParamsAndReload({'filter_status': filterBtn.dataset.filterStatus});
         });
 
-        this.#sortDirBtn.addEventListener('click', (e)=>{
-            let newDir = this.#sortDirBtn.dataset.dir === 'asc' ? 'desc' : 'asc';
-            this.#sortDirBtn.dataset.dir = newDir;
-            this.#sortDirBtn.textContent = newDir === 'asc' ? '↓' : '↑';
-
-            this._setQueryParamsAndReload({'sort_dir': newDir});
-
-        });
-
-        this.#sortSelect.addEventListener('change', (e)=>{
-            const currentDir = this.#sortDirBtn.dataset.dir || 'asc';
-
-            this._setQueryParamsAndReload({
-                'sort_by': this.#sortSelect.value,
-                'sort_dir': currentDir
-            });
-            
-        });
-
         this.#ship_to_select.addEventListener('change', (e)=>{
             const selectedValue = this.#ship_to_select.value;
             const customerShippementAddress = document.getElementById('customer_shippement_addres');
@@ -432,47 +451,69 @@ class SalesApp{
                 customerShippementAddress.classList.remove('hidden');
             } else {
                 customerShippementAddress.classList.add('hidden');
+                const cb = document.getElementById('use-customer-address')
+                if (cb) cb.checked = false
             }
         });
 
-        this.#searchProduct.addEventListener('input', async (e)=>{
-            const query = e.target.value.trim();
-            if(query.length < 2){
-                this.#searchResultsContainer.innerHTML = '';
-                return;
+        this.#searchClearBtn?.addEventListener('click', () => {
+            this.#searchProduct.value = ''
+            this.#searchResultsContainer.innerHTML = ''
+            this.#searchClearBtn.classList.remove('visible')
+            this.#searchProduct.focus()
+        })
+
+        this.#searchProduct.addEventListener('input', async (e) => {
+            const query = e.target.value.trim()
+            this.#searchClearBtn?.classList.toggle('visible', query.length > 0)
+
+            if (query.length < 2) {
+                this.#searchResultsContainer.innerHTML = ''
+                return
             }
 
-            try{
-                const response = await fetch(`/api/products/search/?q=${encodeURIComponent(query)}`);
-                if(!response.ok){
-                    throw new Error('Network response was not ok');
+            try {
+                const response = await fetch(`/api/products/search/?q=${encodeURIComponent(query)}`)
+                if (!response.ok) throw new Error('Network response was not ok')
+
+                const data = await response.json()
+                this.#searchResultsContainer.innerHTML = ''
+
+                if (data.length === 0) {
+                    this.#searchResultsContainer.innerHTML = '<div class="no-results">No products found</div>'
+                    return
                 }
-                const data = await response.json();
-                this.#searchResultsContainer.innerHTML = '';
-                if(data.length === 0){
-                    this.#searchResultsContainer.innerHTML = '<div class="no-results">No products found</div>';
-                    return;
-                }
+
                 data.forEach(product => {
-                    let html = `
-                        <div class="search-result-item" data-product-id="${product.id}">
-                            <strong>${product.name}</strong> (SKU: ${product.sku}) - ${product.get_total_quantity} in stock
+                    const qty = product.get_total_quantity ?? 0
+                    const stockClass = qty === 0 ? 'zero' : qty < 5 ? 'low' : ''
+                    const stockLabel = qty === 0 ? 'Out of stock' : `${qty} in stock`
+                    const item = document.createElement('div')
+                    item.className = 'search-result-item'
+                    item.dataset.productId = product.id
+                    item.innerHTML = `
+                        <div class="search-result-item__info">
+                            <span class="search-result-item__name">${product.name}</span>
+                            <span class="search-result-item__sku">SKU: ${product.sku}</span>
                         </div>
-                    `;
-                    this.#searchResultsContainer.insertAdjacentHTML('beforeend', html);
-                    const productDiv = this.#searchResultsContainer.querySelector(`[data-product-id="${product.id}"]`);
-                    if (productDiv) {
-                        productDiv.addEventListener('click', () => {
-                            // add product to form
-                            this._addProductToForm(product);
-                            this.#searchProduct.value = product.name;
-                            this.#searchResultsContainer.innerHTML = '';
-                        });
-                    }
-                });
+                        <span class="search-result-item__stock ${stockClass}">${stockLabel}</span>
+                    `
+                    item.addEventListener('click', () => {
+                        this._addProductToForm(product)
+                        this.#searchProduct.value = ''
+                        this.#searchClearBtn?.classList.remove('visible')
+                        this.#searchResultsContainer.innerHTML = ''
+                    })
+                    this.#searchResultsContainer.appendChild(item)
+                })
+            } catch (error) {
+                console.error('Error searching products:', error)
             }
-            catch(error){
-                console.error('Error searching products:', error);
+        })
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search_product')) {
+                this.#searchResultsContainer.innerHTML = ''
             }
         })
 
@@ -480,8 +521,8 @@ class SalesApp{
             this._setQueryParamsAndReload({
                 'search': '',
                 'filter_status': '',
-                'sort_by': '',
-                'sort_dir': ''
+                'sort': '',
+                'dir': ''
             });
         });
     }
@@ -556,15 +597,6 @@ class SalesApp{
         }
 
         this._restoreSelectValue(this.#byStatus, urlParams.get('filter_status'));
-        this._restoreSelectValue(this.#sortSelect, urlParams.get('sort_by'));
-
-        if (this.#sortDirBtn) {
-            const sortDirection = urlParams.get('sort_dir');
-            if (sortDirection === 'asc' || sortDirection === 'desc') {
-                this.#sortDirBtn.dataset.dir = sortDirection;
-                this.#sortDirBtn.textContent = sortDirection === 'asc' ? '↓' : '↑';
-            }
-        }
     }
 
     _changeRowsToRender(no_rows){

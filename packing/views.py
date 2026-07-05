@@ -232,6 +232,7 @@ def complete_partial(request, packing_order_id):
                         notes=f'Backorder for {original_order.order_number}',
                         company=user_company,
                         created_by=original_order.created_by,
+                        ship_address=original_order.ship_address,
                     )
                     backorder.generate_order_number()
                     for item, shortage_qty in shortage_items:

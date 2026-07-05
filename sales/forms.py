@@ -56,19 +56,22 @@ class SalesOrderItemForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         company_id = kwargs.pop('company_id', None)
+        valid_warehouse_ids = kwargs.pop('valid_warehouse_ids', None)
         super().__init__(*args, **kwargs)
 
         if company_id:
-            unique_product_ids = (
-                Product.objects.filter(company_id=company_id)
-                .values('sku')
+            qs = Product.objects.filter(company_id=company_id)
+            if valid_warehouse_ids:
+                qs = qs.filter(product_location_id__in=valid_warehouse_ids)
+            # One row per SKU — prefer the lowest id (stable pick, MAIN tends to be created first)
+            unique_ids = (
+                qs.values('sku')
                 .annotate(min_id=Min('id'))
                 .values_list('min_id', flat=True)
             )
-            
-            self.fields['product'].queryset = (Product.objects
-                .filter(company_id=company_id)
-                .order_by('name'))
+            self.fields['product'].queryset = (
+                Product.objects.filter(id__in=unique_ids).order_by('name')
+            )
         else:
             self.fields['product'].queryset = Product.objects.none()
 

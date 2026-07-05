@@ -59,11 +59,19 @@ def sales_list(request, no_rows=10):
     sales_orders = SalesOrder.objects.filter(company_id=user_company.id).order_by('-created_on')
     status_filters = SalesOrder.SalesOrderStatus.choices
 
+    _SORT_FIELDS = {
+        'created_on':   'created_on',
+        'order_number': 'order_number',
+        'customer':     'customer__first_name',
+        'value':        'value',
+        'status':       'status',
+    }
+
     # filtering options
     status_filter = request.GET.get('filter_status', '').upper()
     search_query = request.GET.get('search', '').strip()
-    sort_by = request.GET.get('sort_by')
-    sort_dir = request.GET.get('sort_dir')
+    sort_by  = request.GET.get('sort', '')
+    sort_dir = request.GET.get('dir', 'asc')
 
     if status_filter and status_filter != 'ALL':
         sales_orders = sales_orders.filter(status=status_filter)
@@ -77,9 +85,9 @@ def sales_list(request, no_rows=10):
         ) | sales_orders.filter(
             customer__city__icontains=search_query
         )
-    if sort_by in ['created_on', 'order_number', 'customer', 'value', 'status'] and sort_dir in ['asc', 'desc']:
-        sort_by = f'-{sort_by}' if sort_dir == 'desc' else sort_by
-        sales_orders = sales_orders.order_by(sort_by)
+    if sort_by in _SORT_FIELDS and sort_dir in ('asc', 'desc'):
+        sort_field = _SORT_FIELDS[sort_by]
+        sales_orders = sales_orders.order_by(f'-{sort_field}' if sort_dir == 'desc' else sort_field)
 
     # number of rows for pagination
     no_rows = request.GET.get('rows')
@@ -91,9 +99,18 @@ def sales_list(request, no_rows=10):
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
+    # Warehouses valid for this user: their assigned + company MAIN
+    _profile = UserProfile.objects.select_related('assigned_warehouse').filter(user=request.user).first()
+    _assigned_wh = _profile.assigned_warehouse if _profile else None
+    _main_wh = Warehouse.objects.filter(
+        warehouse_type=Warehouse.WarehouseType.MAIN,
+        company_id=user_company.id,
+    ).first()
+    valid_warehouse_ids = [w.id for w in (_assigned_wh, _main_wh) if w is not None] or None
+
     if request.method == 'POST':
         form = SalesOrderForm(request.POST, company_id=user_company.id)
-        formset = SalesOrderItemFormSet(request.POST, form_kwargs={'company_id': user_company.id})
+        formset = SalesOrderItemFormSet(request.POST, form_kwargs={'company_id': user_company.id, 'valid_warehouse_ids': valid_warehouse_ids})
         is_new_customer = request.POST.get('is_new_customer')
         # Pole renderuje się jako name="ship_to". Domyślnie traktujemy brak wartości jako STORE.
         ship_to_value = request.POST.get('ship_to') or SalesOrder.SalesShipTo.STORE
@@ -204,7 +221,22 @@ def sales_list(request, no_rows=10):
             return redirect('sales:sales_list')
     else:
         form = SalesOrderForm(company_id=user_company.id)
-        formset = SalesOrderItemFormSet(form_kwargs={'company_id': user_company.id})
+        formset = SalesOrderItemFormSet(form_kwargs={'company_id': user_company.id, 'valid_warehouse_ids': valid_warehouse_ids})
+
+    customer_address_map = {
+        str(c.id): {
+            'firstName': c.first_name,
+            'lastName':  c.last_name,
+            'email':     c.email or '',
+            'phone':     c.phone_number or '',
+            'address':   c.address or '',
+            'zipCode':   c.zip_code or '',
+            'city':      c.city or '',
+            'state':     c.state or '',
+            'country':   c.country or '',
+        }
+        for c in Customer.objects.filter(company_id=user_company.id)
+    }
 
     order_items_map = {
         str(order.id): [
@@ -226,10 +258,11 @@ def sales_list(request, no_rows=10):
         'form' : form,
         'formset' :formset,
         'order_items_map_json': json.dumps(order_items_map),
+        'customer_address_map_json': json.dumps(customer_address_map),
         'status_filter': status_filter or 'ALL',
         'search_query': search_query or '',
-        'sort_by': request.GET.get('sort_by') or '',
-        'sort_dir': sort_dir or '',
+        'sort_by':  sort_by,
+        'sort_dir': sort_dir,
         'status_filters': status_filters,
         'can_edit': membership.role in {Membership.Roles.ADMIN, Membership.Roles.MANAGER},
     }

@@ -3,12 +3,147 @@
 }
 
 .expand-row.active {
-    display: grid;
+    display: table-row;
 }
 
 .modal form{
     display: grid;
     gap: 12px;
+}
+
+/*----------------
+  Product search
+------------------*/
+
+.search_product {
+    position: relative;
+}
+
+.search_product-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0;
+}
+
+.search_product input[type="text"] {
+    width: 100%;
+    padding: 9px 36px 9px 12px;
+    border: 1px solid var(--border, #d1d5db);
+    border-radius: 8px;
+    font-size: 14px;
+    background: var(--surface, #fff);
+    transition: border-color .15s;
+}
+
+.search_product input[type="text"]:focus {
+    outline: none;
+    border-color: var(--primary, #4f8a2a);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary, #4f8a2a) 15%, transparent);
+}
+
+.search_product-clear {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--muted, #6b7280);
+    font-size: 16px;
+    line-height: 1;
+    padding: 2px 4px;
+    display: none;
+}
+
+.search_product-clear.visible {
+    display: block;
+}
+
+.search_results {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--surface, #fff);
+    border: 1px solid var(--border, #d1d5db);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px -4px rgba(0,0,0,.12);
+    max-height: 260px;
+    overflow-y: auto;
+    z-index: 200;
+    display: none;
+}
+
+.search_results:not(:empty) {
+    display: block;
+}
+
+.search-result-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--line-soft, #e6eadd);
+    transition: background .1s;
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.search-result-item:hover {
+    background: var(--surface-strong, #ecf0e6);
+}
+
+.search-result-item__info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.search-result-item__name {
+    font-weight: 600;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-result-item__sku {
+    font-size: 12px;
+    color: var(--muted, #6b7280);
+}
+
+.search-result-item__stock {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--primary-soft, #d8e9c4);
+    color: var(--primary, #4f8a2a);
+    white-space: nowrap;
+}
+
+.search-result-item__stock.low {
+    background: #fff0d3;
+    color: #8a5c00;
+}
+
+.search-result-item__stock.zero {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.no-results {
+    padding: 14px 16px;
+    font-size: 13px;
+    color: var(--muted, #6b7280);
+    text-align: center;
 }
 
 .modal-new-customer{
@@ -103,7 +238,7 @@ cursor: pointer;
 .orders-container {
 border: 1px solid #e5e7eb;
 border-radius: 12px;
-overflow: scroll;
+overflow: auto;
 font-size: 14px;
 
 }
@@ -181,77 +316,15 @@ padding: 4px 8px;
 }
 
 /*----------------
-Order List 
+Order List
 ------------------*/
-
-.order-row {
-display: grid;
-grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
-gap: 30px;
-align-items: center;
-padding: 14px 16px;
-border-left: 4px solid transparent;
-border-bottom: 1px solid #e5e7eb;
-}
-
-.order-col{
-display: flex;
-flex-direction: column;
-text-align: left;
-gap: 4px;
-}
-
-.orders-header{
-    background-color: #eff6ff;
-}
-
-.orders-header-col{
-    text-align: left;
-}
-
-/*----------------
-Order List - Hover & Expanded 
-------------------*/
-
-.order-row.expanded {
-border-left-color: #2563eb;
-background: #eff6ff;
-}
 
 .order-number {
-font-weight: 600;
-}
-
-.order-date {
-color: #6b7280;
+    font-weight: 600;
 }
 
 .customer-name {
-font-weight: 500;
-}
-
-.customer-location {
-font-size: 12px;
-color: #6b7280;
-}
-
-.order-value {
-font-weight: 600;
-}
-
-.order-tracking{
-color: #6b7280;
-}
-
-
-.order-status {
-display: inline-block;
-padding: 4px 8px;
-border-radius: 6px;
-font-size: 12px;
-text-align: center;
-width: fit-content;
-background: rgba(245, 158, 11, 0.15);
+    font-weight: 500;
 }
 
 .pagination {
