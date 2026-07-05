@@ -178,7 +178,8 @@ Before production deployment:
 
 ## License
 
-Add your preferred license information here.
+Copyright (c) 2026 Marek Marczak. All rights reserved.
+Proprietary software — unauthorized use, copying, or distribution is prohibited.
 
 ## Contributing
 
