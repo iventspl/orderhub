@@ -21,53 +21,40 @@
 
   <div class="orders-container">
         <div class="orders-toolbar">
-            <div class="toolbar-col">
-                <div class="toolbar-row">
-                    <input class="search-input" name="search" id="o-search" type="text" placeholder="Search order, customer, city…" />
-                </div>
-                <div class="controls">
-                    <label>
+            <input class="search-input" name="search" id="o-search" type="text" placeholder="Search order, customer, city…" />
+            <div class="toolbar-filters">
+                <label class="toolbar-label">
                     Payment
-                        <select name="filter_payment" id="o-payment">
-                            <option value="all">All</option>
-                            <option value="net_14">Net 14</option>
-                            <option value="prepaid">Prepaid</option>
-                            <option value="net_30">Net 30</option>
-                            <option value="on_delivery">On delivery</option>
-                            <option value="paid">Paid</option>
-                        </select>
-                    </label>
-                </div>
-
-                <div class="controls">
-                    <label>
-                    Order date from
+                    <select name="filter_payment" id="o-payment">
+                        <option value="all">All</option>
+                        <option value="net_14">Net 14</option>
+                        <option value="prepaid">Prepaid</option>
+                        <option value="net_30">Net 30</option>
+                        <option value="on_delivery">On delivery</option>
+                        <option value="paid">Paid</option>
+                    </select>
+                </label>
+                <label class="toolbar-label">
+                    From
                     <input type="date">
-                    </label>
-
-                    <label>
+                </label>
+                <label class="toolbar-label">
                     To
                     <input type="date">
-                    </label>
-                </div>
-
-                <button class="btn" id="reset-filters">Reset</button>
-            </div>
-            <div class="toolbar-row">
+                </label>
+                <div class="toolbar-divider"></div>
                 <div class="filters" role="group" aria-label="Filter orders by status">
                     {% for filter_value, filter_label in status_filters %}
                         <button class="filter-btn{% if status_filter == filter_value %} active{% endif %}"
-                                        type="button"
-                                        data-filter-status="{{ filter_value }}">
+                                type="button"
+                                data-filter-status="{{ filter_value }}">
                             {{ filter_label }}
                         </button>
                     {% endfor %}
                 </div>
+                <button class="btn btn-sm" id="reset-filters">Reset</button>
             </div>
-
-            
-
-    </div>
+        </div>
     <table>
         <thead>
             <tr>
