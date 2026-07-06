@@ -14,14 +14,7 @@ class TransferForm(forms.Form):
         if company_id:
             self.fields['source_warehouse'].queryset = Warehouse.objects.filter(company_id=company_id)
             self.fields['destination_warehouse'].queryset = Warehouse.objects.filter(company_id=company_id)
-            unique_product_ids = (
-                Product.objects.filter(company_id=company_id)
-                .values('sku')
-                .annotate(min_id=Min('id'))
-                .values_list('min_id', flat=True)
-            )
             self.fields['product'].queryset = Product.objects.filter(
-                id__in=unique_product_ids,
                 company_id=company_id,
             ).order_by('name', 'sku')
         else:
@@ -31,8 +24,8 @@ class TransferForm(forms.Form):
 
     source_warehouse = forms.ModelChoiceField(queryset=Warehouse.objects.all(), label='Source Warehouse')
     destination_warehouse = forms.ModelChoiceField(queryset=Warehouse.objects.all(), label='Destination Warehouse')
-    product = forms.ModelChoiceField(queryset=Product.objects.all(), label='Product')
-    quantity = forms.IntegerField(min_value=1, label='Quantity to Transfer')
+    product = forms.ModelChoiceField(queryset=Product.objects.all(), label='Product', required=False)
+    quantity = forms.IntegerField(min_value=1, label='Quantity to Transfer', required=False)
     notes = forms.CharField(widget=forms.Textarea, required=False, label='Notes')
 
     widgets = {
@@ -53,28 +46,31 @@ class TransferForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
-        source_warehouse = cleaned_data.get("source_warehouse")
+        source_warehouse      = cleaned_data.get("source_warehouse")
         destination_warehouse = cleaned_data.get("destination_warehouse")
-        product = cleaned_data.get("product")
-        quantity = cleaned_data.get("quantity")
+        product               = cleaned_data.get("product")
+        quantity              = cleaned_data.get("quantity")
 
-        if source_warehouse == destination_warehouse:
+        if source_warehouse and destination_warehouse and source_warehouse == destination_warehouse:
             raise forms.ValidationError("Source and destination warehouses must be different.")
 
-        source_product = None
-        if source_warehouse and product:
-            source_product = Product.objects.filter(
-                product_location=source_warehouse,
-                sku=product.sku,
-                company_id=source_warehouse.company_id,
-            ).first()
-            if not source_product:
-                raise forms.ValidationError("Selected product is not available in source warehouse.")
+        # Only validate product/quantity when the main form carries a product
+        # (multi-product transfers send all items via the formset instead)
+        if product:
+            source_product = None
+            if source_warehouse:
+                source_product = Product.objects.filter(
+                    product_location=source_warehouse,
+                    sku=product.sku,
+                    company_id=source_warehouse.company_id,
+                ).first()
+                if not source_product:
+                    raise forms.ValidationError("Selected product is not available in source warehouse.")
 
-        if source_warehouse and product and quantity:
-            available_quantity = max(source_product.stock_quantity - source_product.reserved_quantity, 0) if source_product else 0
-            if available_quantity < quantity:
-                raise forms.ValidationError("Insufficient stock in the source warehouse.")
+            if source_warehouse and quantity:
+                available = max(source_product.stock_quantity - source_product.reserved_quantity, 0) if source_product else 0
+                if available < quantity:
+                    raise forms.ValidationError("Insufficient stock in the source warehouse.")
 
         return cleaned_data
     
@@ -89,14 +85,7 @@ class TransferProductForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         if company_id:
-            unique_product_ids = (
-                Product.objects.filter(company_id=company_id)
-                .values('sku')
-                .annotate(min_id=Min('id'))
-                .values_list('min_id', flat=True)
-            )
             self.fields['product'].queryset = Product.objects.filter(
-                id__in=unique_product_ids,
                 company_id=company_id,
             ).order_by('name', 'sku')
         else:

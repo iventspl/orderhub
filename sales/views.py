@@ -69,9 +69,11 @@ def sales_list(request, no_rows=10):
 
     # filtering options
     status_filter = request.GET.get('filter_status', '').upper()
-    search_query = request.GET.get('search', '').strip()
-    sort_by  = request.GET.get('sort', '')
-    sort_dir = request.GET.get('dir', 'asc')
+    search_query  = request.GET.get('search', '').strip()
+    sort_by       = request.GET.get('sort', '')
+    sort_dir      = request.GET.get('dir', 'asc')
+    date_from     = request.GET.get('date_from', '').strip()
+    date_to       = request.GET.get('date_to', '').strip()
 
     if status_filter and status_filter != 'ALL':
         sales_orders = sales_orders.filter(status=status_filter)
@@ -85,6 +87,10 @@ def sales_list(request, no_rows=10):
         ) | sales_orders.filter(
             customer__city__icontains=search_query
         )
+    if date_from:
+        sales_orders = sales_orders.filter(created_on__date__gte=date_from)
+    if date_to:
+        sales_orders = sales_orders.filter(created_on__date__lte=date_to)
     if sort_by in _SORT_FIELDS and sort_dir in ('asc', 'desc'):
         sort_field = _SORT_FIELDS[sort_by]
         sales_orders = sales_orders.order_by(f'-{sort_field}' if sort_dir == 'desc' else sort_field)
@@ -263,6 +269,8 @@ def sales_list(request, no_rows=10):
         'search_query': search_query or '',
         'sort_by':  sort_by,
         'sort_dir': sort_dir,
+        'date_from': date_from,
+        'date_to':   date_to,
         'status_filters': status_filters,
         'can_edit': membership.role in {Membership.Roles.ADMIN, Membership.Roles.MANAGER},
     }

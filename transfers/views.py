@@ -12,9 +12,21 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from users.models import Membership
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 
 
 def _lock_and_validate_stock(requested_by_sku, assigned_warehouse, main_warehouse, company_id):
+    """
+    Acquires row-level locks on all relevant Product rows and validates that
+    combined available stock (assigned + main warehouse) covers the requested
+    quantities.  Raises ValidationError on the first SKU that falls short.
+
+    Args:
+        requested_by_sku (dict):  {sku: total_quantity_requested}
+        assigned_warehouse:       primary source Warehouse instance (may be None)
+        main_warehouse:           fallback main Warehouse instance (may be None)
+        company_id (int):         company scope for the product lookup
+    """
     warehouse_ids = []
     if assigned_warehouse and assigned_warehouse.company_id == company_id:
         warehouse_ids.append(assigned_warehouse.id)
@@ -43,6 +55,14 @@ def _lock_and_validate_stock(requested_by_sku, assigned_warehouse, main_warehous
 
 
 def _collect_requested_transfer_items(form, formset):
+    """
+    Merges product/quantity data from the top-level TransferForm and every
+    non-deleted formset row into a single list of dicts:
+        [{'product': <Product>, 'quantity': <int>}, ...]
+
+    The top-level form fields (product/quantity) are optional – if omitted all
+    items come exclusively from the formset rows.
+    """
     requested_items = []
 
     product = form.cleaned_data.get('product')
@@ -63,6 +83,10 @@ def _collect_requested_transfer_items(form, formset):
 
 @login_required
 def transfers_list(request):
+    """
+    Renders the transfer history page with a blank TransferForm and an empty
+    TransferProductFormSet passed to the template for the 'New transfer' modal.
+    """
     user_company = get_object_or_404(Membership, user=request.user).company
     form = TransferForm(company_id=user_company.id)
     formset = TransferProductFormSet(instance=Transfer(), form_kwargs={'company_id': user_company.id})
@@ -80,6 +104,20 @@ def transfers_list(request):
 @login_required
 @require_POST
 def create_transfer(request):
+    """
+    Handles the 'New transfer' form submission.
+
+    Flow:
+      1. Validates TransferForm (warehouses, notes) and TransferProductFormSet
+         (one row per product to move).
+      2. Locks product rows with SELECT FOR UPDATE inside an atomic transaction.
+      3. Deducts stock_quantity from source products and adds to destination
+         products, creating new destination Product rows if they don't exist yet.
+      4. Persists a Transfer header record and TransferProduct line items.
+
+    Redirects back to transfers_list on both success and validation failure,
+    using Django messages to surface errors to the user.
+    """
     user_company = get_object_or_404(Membership, user=request.user).company
     form = TransferForm(request.POST, company_id=user_company.id)
     formset = TransferProductFormSet(
@@ -89,7 +127,11 @@ def create_transfer(request):
     )
 
     if not form.is_valid() or not formset.is_valid():
-        messages.error(request, 'Invalid form data.')
+        errors = {**form.errors, **formset.management_form.errors}
+        error_msg = '; '.join(
+            f'{field}: {", ".join(errs)}' for field, errs in errors.items()
+        ) or 'Invalid form data.'
+        messages.error(request, error_msg)
         return redirect('transfers:transfers_list')
 
     source_warehouse = form.cleaned_data['source_warehouse']
@@ -184,6 +226,9 @@ def create_transfer(request):
 @login_required
 @require_POST
 def edit_transfer(request, transfer_id):
+    """
+    Updates an existing transfer record.  Not yet implemented.
+    """
     user_company = get_object_or_404(Membership, user=request.user).company
     pass
 
@@ -191,12 +236,29 @@ def edit_transfer(request, transfer_id):
 @login_required
 @require_POST
 def delete_transfer(request, transfer_id):
+    """
+    Deletes a transfer record by ID.  Not yet implemented.
+    """
     user_company = get_object_or_404(Membership, user=request.user).company
     pass
 
 
 @login_required
 def get_products_by_warehouse(request, warehouse_id):
+    """
+    JSON API endpoint used by the transfer modal's product search.
+
+    GET /transfers/api/get-products/<warehouse_id>/?q=<query>
+
+    Returns a JSON array of products located in the given warehouse that belong
+    to the current user's company.  The optional 'q' query parameter filters by
+    name or SKU (case-insensitive).  Each item includes id, name, sku, and
+    stock_quantity.
+    """
     user_company = get_object_or_404(Membership, user=request.user).company
-    products = Product.objects.filter(product_location_id=warehouse_id, company_id=user_company.id).values('id', 'name', 'sku', 'stock_quantity')
+    qs = Product.objects.filter(product_location_id=warehouse_id, company_id=user_company.id)
+    q = request.GET.get('q', '').strip()
+    if q:
+        qs = qs.filter(Q(name__icontains=q) | Q(sku__icontains=q))
+    products = qs.values('id', 'name', 'sku', 'stock_quantity').order_by('name')
     return JsonResponse(list(products), safe=False)

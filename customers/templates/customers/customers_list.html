@@ -1,99 +1,224 @@
 {% extends "mainapp/base.html" %}
-{% block title %}
-    Customers - Organized Company
-{% endblock title %}
+{% load static %}
+{% block title %}Customers - Organized Company{% endblock title %}
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/customers.css' %}">
+{% endblock extra_css %}
 {% block content %}
-    <!-- ============================================================
-             8. CUSTOMERS
-        ============================================================ -->
-    <section id="section-customers">
-        <div class="card">
-            <div class="card-header">
-                <h3>Customers</h3>
-                <div class="toolbar">
-                    <input id="c-search" type="text" placeholder="Search…" />
-                    <button class="btn btn-primary btn-sm"
-                            id="c-new"
-                            onclick="openModal('customer-modal')">+ New customer</button>
-                </div>
-            </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID/Code</th>
-                        <th>Name</th>
-                        <th>Contact</th>
-                        <th>Email</th>
-                        <th>Phone</th>
-                        <th>City</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for customer in customers %}
-                        <tr class="clickable">
-                            <td>{% if customer.customer_code %}{{ customer.customer_code }}{% else %}{{ customer.id }}{% endif %}</td>
-                            <td>{{ customer.name }}</td>
-                            <td>{{ customer.get_full_name }}</td>
-                            <td>{{ customer.email }}</td>
-                            <td>{{ customer.phone_number }}</td>
-                            <td>{{ customer.city|title }}</td>
-                            <td>
-                                <button class="btn btn-sm">Edit</button>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+<section class="customers-workspace">
+
+    <div class="workspace-header">
+        <div class="workspace-title">
+            <small>CRM</small>
+            <h3>Customers</h3>
         </div>
-        <!-- ============================================================
-       13d. MODAL — Edit customer (reference, commented out)
-============================================================ -->
-        <div id="customer-modal" class="modal-backdrop hidden">
-            <div class="modal" role="dialog">
-                <div class="modal-header">
-                    <h3 style="margin:0">Edit Nord Lens Group</h3>
-                    <button class="btn btn-quiet" onclick="closeModal('customer-modal')">&times;</button>
+        <button class="btn btn-primary btn-sm" onclick="openModal('customer-create-modal')">+ New customer</button>
+    </div>
+
+    <div class="card">
+        <div class="customers-toolbar">
+            <input class="search-input" id="c-search" type="text" placeholder="Search name, email, city, code…" value="{{ search_query }}" />
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th data-sort="code">Code <span class="sort-indicator">{% if sort_by == 'code' %}{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</span></th>
+                    <th data-sort="name">Name <span class="sort-indicator">{% if sort_by == 'name' %}{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</span></th>
+                    <th data-sort="email">Email <span class="sort-indicator">{% if sort_by == 'email' %}{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</span></th>
+                    <th>Phone</th>
+                    <th data-sort="city">City <span class="sort-indicator">{% if sort_by == 'city' %}{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</span></th>
+                    <th data-sort="created_on">Created <span class="sort-indicator">{% if sort_by == 'created_on' %}{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</span></th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for customer in page_obj %}
+                <tr>
+                    <td><span class="muted small">{{ customer.customer_code|default:customer.id }}</span></td>
+                    <td><strong>{{ customer.get_full_name }}</strong></td>
+                    <td>{{ customer.email }}</td>
+                    <td>{{ customer.phone_number|default:"—" }}</td>
+                    <td>{{ customer.city|default:"—"|title }}</td>
+                    <td class="muted small">{{ customer.created_on|date:"Y-m-d" }}</td>
+                    <td>
+                        <button class="btn btn-sm edit-customer-btn"
+                                data-id="{{ customer.id }}"
+                                data-first-name="{{ customer.first_name }}"
+                                data-last-name="{{ customer.last_name }}"
+                                data-email="{{ customer.email }}"
+                                data-phone="{{ customer.phone_number|default:'' }}"
+                                data-address="{{ customer.address|default:'' }}"
+                                data-city="{{ customer.city|default:'' }}"
+                                data-state="{{ customer.state|default:'' }}"
+                                data-zip="{{ customer.zip_code|default:'' }}"
+                                data-country="{{ customer.country|default:'' }}">Edit</button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" style="text-align:center; padding:2rem; color:var(--muted);">No customers found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="pagination">
+            <span>Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }}</span>
+            <div class="pagination-controls">
+                <label>Show
+                    <select class="pagination-rows">
+                        <option value="10" {% if no_rows == '10' %}selected{% endif %}>10</option>
+                        <option value="25" {% if no_rows == '25' or no_rows == 25 %}selected{% endif %}>25</option>
+                        <option value="50" {% if no_rows == '50' %}selected{% endif %}>50</option>
+                    </select>
+                </label>
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}&rows={{ no_rows }}{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_by %}&sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}" class="btn btn-sm">Prev</a>
+                {% endif %}
+                <span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}&rows={{ no_rows }}{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_by %}&sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}" class="btn btn-sm">Next</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ── Modal: New customer ── -->
+<div id="customer-create-modal" class="modal-backdrop hidden">
+    <div class="modal" role="dialog">
+        <div class="modal-header">
+            <h3 style="margin:0">New customer</h3>
+            <button class="btn btn-quiet" onclick="closeModal('customer-create-modal')">&times;</button>
+        </div>
+        <form id="customer-create-form" novalidate>
+            {% csrf_token %}
+            <div class="modal-body">
+                <div class="row">
+                    <label>
+                        <span>First name <span class="req">*</span></span>
+                        <input name="first_name" id="c-first-name" autocomplete="given-name" />
+                        <span class="field-error" id="err-first-name"></span>
+                    </label>
+                    <label>
+                        <span>Last name <span class="req">*</span></span>
+                        <input name="last_name" id="c-last-name" autocomplete="family-name" />
+                        <span class="field-error" id="err-last-name"></span>
+                    </label>
                 </div>
-                <div class="modal-body">
+                <div class="row">
                     <label>
-                        Name
-                        <input data-f="name" value="Nord Lens Group" />
-                    </label>
-                    <label>
-                        Contact
-                        <input data-f="contactName" value="Lena Hoffmann" />
-                    </label>
-                    <label>
-                        Email
-                        <input data-f="email" value="orders@nordlensgroup.example" />
+                        <span>Email <span class="req">*</span></span>
+                        <input name="email" id="c-email" type="email" autocomplete="email" />
+                        <span class="field-error" id="err-email"></span>
                     </label>
                     <label>
                         Phone
-                        <input data-f="phone" value="+49 200000000" />
+                        <input name="phone_number" id="c-phone" type="tel" autocomplete="tel" />
                     </label>
+                </div>
+                <div class="row-3">
                     <label>
                         Address
-                        <input data-f="address" value="Lindenallee 12" />
+                        <input name="address" id="c-address" autocomplete="street-address" />
+                    </label>
+                    <label>
+                        Zip code
+                        <input name="zip_code" id="c-zip" autocomplete="postal-code" />
                     </label>
                     <label>
                         City
-                        <input data-f="city" value="Berlin" />
+                        <input name="city" id="c-city" autocomplete="address-level2" />
+                    </label>
+                </div>
+                <div class="row">
+                    <label>
+                        State
+                        <input name="state" id="c-state" autocomplete="address-level1" />
                     </label>
                     <label>
                         Country
-                        <input data-f="country" value="DE" />
+                        <input name="country" id="c-country" autocomplete="country-name" />
                     </label>
-                    <label>
-                        Notes
-                        <input data-f="notes" value="Preferred VIP partner" />
-                    </label>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn" onclick="closeModal('customer-modal')">Cancel</button>
-                    <button class="btn btn-primary">Save</button>
                 </div>
             </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" onclick="closeModal('customer-create-modal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create customer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ── Modal: Edit customer (injected by JS) ── -->
+<div id="customer-edit-modal" class="modal-backdrop hidden">
+    <div class="modal" role="dialog">
+        <div class="modal-header">
+            <h3 style="margin:0" id="edit-modal-title">Edit customer</h3>
+            <button class="btn btn-quiet" onclick="closeModal('customer-edit-modal')">&times;</button>
         </div>
-    </section>
+        <form id="customer-edit-form" novalidate>
+            {% csrf_token %}
+            <input type="hidden" id="edit-customer-id" />
+            <div class="modal-body">
+                <div class="row">
+                    <label>
+                        <span>First name <span class="req">*</span></span>
+                        <input name="first_name" id="e-first-name" autocomplete="given-name" />
+                        <span class="field-error" id="e-err-first-name"></span>
+                    </label>
+                    <label>
+                        <span>Last name <span class="req">*</span></span>
+                        <input name="last_name" id="e-last-name" autocomplete="family-name" />
+                        <span class="field-error" id="e-err-last-name"></span>
+                    </label>
+                </div>
+                <div class="row">
+                    <label>
+                        <span>Email <span class="req">*</span></span>
+                        <input name="email" id="e-email" type="email" autocomplete="email" />
+                        <span class="field-error" id="e-err-email"></span>
+                    </label>
+                    <label>
+                        Phone
+                        <input name="phone_number" id="e-phone" type="tel" autocomplete="tel" />
+                    </label>
+                </div>
+                <div class="row-3">
+                    <label>
+                        Address
+                        <input name="address" id="e-address" autocomplete="street-address" />
+                    </label>
+                    <label>
+                        Zip code
+                        <input name="zip_code" id="e-zip" autocomplete="postal-code" />
+                    </label>
+                    <label>
+                        City
+                        <input name="city" id="e-city" autocomplete="address-level2" />
+                    </label>
+                </div>
+                <div class="row">
+                    <label>
+                        State
+                        <input name="state" id="e-state" autocomplete="address-level1" />
+                    </label>
+                    <label>
+                        Country
+                        <input name="country" id="e-country" autocomplete="country-name" />
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" onclick="closeModal('customer-edit-modal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 {% endblock content %}
+{% block extra_js %}
+    <script src="{% static 'js/customers.js' %}" defer></script>
+{% endblock extra_js %}

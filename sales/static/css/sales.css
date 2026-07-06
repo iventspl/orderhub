@@ -344,6 +344,19 @@ font-size: 14px;
     font-weight: 600;
 }
 
+.btn-reset {
+    border-color: #e0b3ae;
+    background: #fdf2f1;
+    color: #9b2c2c;
+    font-weight: 600;
+}
+
+.btn-reset:hover {
+    background: #fce8e6;
+    border-color: #c0392b;
+    color: #7b1d1d;
+}
+
 /*----------------
 Order List
 ------------------*/
@@ -507,4 +520,114 @@ border-color: #2563eb;
 
 .btn-primary:hover {
 background: #1d4ed8;
+}
+
+/* ─────────────────────────────────────────
+   MOBILE  ≤ 640px
+───────────────────────────────────────── */
+@media (max-width: 640px) {
+
+    /* Workspace shell */
+    .orders-workspace {
+        padding: 12px;
+        border-radius: 8px;
+    }
+
+    .workspace-header {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    /* Table: hide Tracking column (3rd) */
+    .orders-container table thead tr th:nth-child(3),
+    .orders-container table tbody tr td:nth-child(3) {
+        display: none;
+    }
+
+    /* Hide secondary sub-text in cells to save row height */
+    .order-date,
+    tr.clickable td:nth-child(2) .small {
+        display: none;
+    }
+
+    /* Tighter cell padding on mobile */
+    .orders-container td,
+    .orders-container th {
+        padding: 8px 10px;
+    }
+
+    /* Toolbar: wrap label inputs but let status pills scroll */
+    .toolbar-filters {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .toolbar-label select,
+    .toolbar-label input[type="date"] {
+        min-width: 0;
+        width: 100%;
+    }
+
+    /* Status filter group scrolls horizontally in its own row */
+    .filters {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 2px;
+        width: 100%;
+    }
+
+    /* Hide the vertical divider */
+    .toolbar-divider {
+        display: none;
+    }
+
+    /* Reset button full width on its row */
+    .btn-reset {
+        margin-left: auto;
+    }
+
+    /* Expand row: single-column detail grid */
+    .details-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .order-card {
+        padding: 12px;
+    }
+
+    .order-title {
+        font-size: 16px;
+    }
+
+    /* Actions wrap tightly */
+    .actions {
+        gap: 6px;
+    }
+
+    .actions .btn {
+        flex: 1 1 auto;
+        text-align: center;
+    }
+
+    /* Modal: near-fullscreen */
+    .modal-backdrop {
+        padding: 0;
+        align-items: flex-end;
+    }
+
+    .modal {
+        max-width: 100%;
+        width: 100%;
+        max-height: 92dvh;
+        border-radius: 16px 16px 0 0;
+    }
+
+    /* Pagination: stack on tiny screens */
+    .pagination {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 12px;
+    }
 }

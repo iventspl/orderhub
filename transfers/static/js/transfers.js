@@ -1,134 +1,189 @@
-class Transfers {
-    #transferForm = document.getElementById('transfer-form');
-    #sourceWarehouseSelect = document.getElementById('id_source_warehouse');
-    #productSelect = document.getElementById('id_product');
-    #addProductButton = document.getElementById('add-product-btn');
-    #itemsContainer = document.getElementById('transfer-items-container');
-    #emptyItemTemplate = document.getElementById('empty-item-form-template');
-    #totalFormsInput = document.getElementById('id_transfer_products-TOTAL_FORMS');
-    #products = [];
+'use strict';
 
-    constructor() {
-        if (!this.#transferForm || !this.#sourceWarehouseSelect || !this.#productSelect || !this.#totalFormsInput) {
-            return;
-        }
+class TransferModal {
+	#fromSelect = document.getElementById('id_source_warehouse');
+	#container  = document.getElementById('tr-items-container');
+	#addBtn     = document.getElementById('tr-add-product');
+	#totalForms = document.getElementById('id_transfer_products-TOTAL_FORMS');
 
-        this.#totalFormsInput.value = this.#itemsContainer.querySelectorAll('.transfer-item-row').length;
+	#timers = {};
 
-        this.#sourceWarehouseSelect.addEventListener('change', e => {
-            const warehouseId = e.target.value;
-            this.updateProductOptions(warehouseId);
-        });
+	constructor() {
+		if (!this.#fromSelect) return;
 
-        this.#addProductButton?.addEventListener('click', () => {
-            this.addProductRow();
-        });
+		this.#fromSelect.addEventListener('change', () => this._onWarehouseChange());
+		this.#addBtn?.addEventListener('click', () => this._addRow());
 
-        this.#itemsContainer?.addEventListener('click', event => {
-            const removeButton = event.target.closest('.remove-transfer-item-btn');
-            if (!removeButton) {
-                return;
-            }
+		this.#container.addEventListener('input', (e) => {
+			const input = e.target.closest('.tr-search-input');
+			if (!input) return;
+			this._onInput(input.closest('.tr-product-row'), input);
+		});
 
-            const row = removeButton.closest('.transfer-item-row');
-            row?.remove();
-            this.syncTotalForms();
-        });
+		this.#container.addEventListener('click', (e) => {
+			if (e.target.closest('.tr-search-clear')) {
+				this._clearRow(e.target.closest('.tr-product-row'));
+				return;
+			}
+			if (e.target.closest('.tr-remove-row')) {
+				this._removeRow(e.target.closest('.tr-product-row'));
+			}
+		});
 
-        if (this.#sourceWarehouseSelect.value) {
-            this.updateProductOptions(this.#sourceWarehouseSelect.value);
-        }
-    }
+		document.addEventListener('click', (e) => {
+			if (!e.target.closest('.tr-product-row')) this._closeAllResults();
+		});
+	}
 
-    updateProductOptions(warehouseId) {
-        if (!warehouseId) {
-            this.#products = [];
-            this.populateAllProductSelects([]);
-            return;
-        }
+	// ── warehouse change ─────────────────────────────────────────────
 
-        (async () => {
-            try {
-                const response = await fetch(`/transfers/api/get-products/${warehouseId}/`);
-                if (!response.ok) {
-                    throw new Error('Failed to fetch products for the selected warehouse.');
-                }
-                this.#products = await response.json();
-                this.populateAllProductSelects(this.#products);
-            } catch (error) {
-                console.error('Error fetching products:', error);
-                this.#products = [];
-                this.populateAllProductSelects([]);
-            }
-        })();
-    }
+	_onWarehouseChange() {
+		const enabled = !!this.#fromSelect.value;
+		this.#container.querySelectorAll('.tr-product-row').forEach(row => {
+			this._clearRow(row);
+			const inp = row.querySelector('.tr-search-input');
+			inp.disabled    = !enabled;
+			inp.placeholder = enabled ? 'Search product by name or SKU…' : 'Select a source warehouse first…';
+		});
+	}
 
-    populateAllProductSelects(products) {
-        this.getProductSelects().forEach(select => {
-            const currentValue = select.value;
-            this.populateProductSelect(select, products, currentValue);
-        });
-    }
+	// ── search per row ───────────────────────────────────────────────
 
-    populateProductSelect(select, products, selectedValue = '') {
-        select.innerHTML = '<option value="">---------</option>';
-        products.forEach(product => {
-            const option = document.createElement('option');
-            option.value = product.id;
-            option.textContent = `${product.name} (SKU: ${product.sku}, Stock: ${product.stock_quantity})`;
-            if (String(product.id) === String(selectedValue)) {
-                option.selected = true;
-            }
-            select.appendChild(option);
-        });
-    }
+	_onInput(row, input) {
+		const idx = row.dataset.index;
+		const q   = input.value.trim();
 
-    addProductRow() {
-        if (!this.#emptyItemTemplate || !this.#itemsContainer) {
-            return;
-        }
+		row.querySelector('.tr-product-id-input').value = '';
+		row.querySelector('.tr-search-clear').classList.toggle('hidden', q.length === 0);
 
-        const nextIndex = this.#itemsContainer.querySelectorAll('.transfer-item-row').length;
-        const html = this.#emptyItemTemplate.innerHTML.replaceAll('__prefix__', String(nextIndex));
-        this.#itemsContainer.insertAdjacentHTML('beforeend', html);
-        this.syncTotalForms();
+		clearTimeout(this.#timers[idx]);
+		if (q.length < 2) { this._closeResults(row); return; }
 
-        const rows = this.#itemsContainer.querySelectorAll('.transfer-item-row');
-        const newRow = rows[rows.length - 1];
-        const select = newRow?.querySelector('select[name$="-product"]');
-        if (select) {
-            this.populateProductSelect(select, this.#products, '');
-        }
-    }
+		this.#timers[idx] = setTimeout(() => this._fetch(row, q), 300);
+	}
 
-    syncTotalForms() {
-        if (!this.#totalFormsInput || !this.#itemsContainer) {
-            return;
-        }
+	async _fetch(row, q) {
+		const warehouseId = this.#fromSelect.value;
+		if (!warehouseId) return;
+		try {
+			const res  = await fetch(`/transfers/api/get-products/${warehouseId}/?q=${encodeURIComponent(q)}`);
+			const data = await res.json();
+			this._renderResults(row, data);
+		} catch {
+			this._closeResults(row);
+		}
+	}
 
-        const rows = Array.from(this.#itemsContainer.querySelectorAll('.transfer-item-row'));
-        rows.forEach((row, index) => {
-            row.querySelectorAll('[name], [id], label').forEach(element => {
-                if (element.name) {
-                    element.name = element.name.replace(/transfer_products-\d+-/, `transfer_products-${index}-`);
-                }
-                if (element.id) {
-                    element.id = element.id.replace(/id_transfer_products-\d+-/, `id_transfer_products-${index}-`);
-                }
-                if (element.htmlFor) {
-                    element.htmlFor = element.htmlFor.replace(/id_transfer_products-\d+-/, `id_transfer_products-${index}-`);
-                }
-            });
-        });
-        this.#totalFormsInput.value = rows.length;
-    }
+	_renderResults(row, products) {
+		const box = row.querySelector('.tr-search-results');
+		box.innerHTML = '';
 
-    getProductSelects() {
-        const extraSelects = this.#itemsContainer
-            ? Array.from(this.#itemsContainer.querySelectorAll('select[name$="-product"]'))
-            : [];
-        return [this.#productSelect, ...extraSelects].filter(Boolean);
-    }
+		if (!products.length) {
+			box.innerHTML = '<div class="tr-no-results">No products found</div>';
+			box.classList.remove('hidden');
+			return;
+		}
+
+		products.forEach(p => {
+			const qty   = p.stock_quantity ?? 0;
+			const cls   = qty === 0 ? 'zero' : qty < 5 ? 'low' : '';
+			const label = qty === 0 ? 'Out of stock' : `${qty} in stock`;
+			const item  = document.createElement('div');
+			item.className = 'tr-result-item';
+			item.innerHTML = `
+				<div class="tr-result-info">
+					<span class="tr-result-name">${this._esc(p.name)}</span>
+					<span class="tr-result-sku">SKU: ${this._esc(p.sku)}</span>
+				</div>
+				<span class="tr-result-stock ${cls}">${label}</span>
+			`;
+			item.addEventListener('mousedown', (e) => {
+				e.preventDefault();
+				this._select(row, p);
+			});
+			box.appendChild(item);
+		});
+
+		box.classList.remove('hidden');
+	}
+
+	_select(row, product) {
+		row.querySelector('.tr-product-id-input').value = product.id;
+		row.querySelector('.tr-search-input').value     = `${product.name} (${product.sku})`;
+		row.querySelector('.tr-search-clear').classList.remove('hidden');
+		this._closeResults(row);
+	}
+
+	// ── row management ───────────────────────────────────────────────
+
+	_addRow() {
+		const rows    = this.#container.querySelectorAll('.tr-product-row');
+		const idx     = rows.length;
+		const enabled = !!this.#fromSelect.value;
+
+		const div = document.createElement('div');
+		div.className     = 'tr-product-row';
+		div.dataset.index = idx;
+		div.innerHTML = `
+			<div class="tr-search-product">
+				<input type="text" class="tr-search-input"
+				       placeholder="${enabled ? 'Search product by name or SKU…' : 'Select a source warehouse first…'}"
+				       autocomplete="off" ${enabled ? '' : 'disabled'} />
+				<button type="button" class="tr-search-clear hidden" title="Clear">&times;</button>
+				<div class="tr-search-results hidden"></div>
+			</div>
+			<input type="hidden" name="transfer_products-${idx}-product" class="tr-product-id-input" />
+			<input type="number" name="transfer_products-${idx}-quantity" class="tr-qty-input"
+			       min="1" step="1" placeholder="Qty" />
+			<button type="button" class="btn btn-sm btn-quiet tr-remove-row" title="Remove row">&times;</button>
+		`;
+		this.#container.appendChild(div);
+		this.#totalForms.value = idx + 1;
+		div.querySelector('.tr-search-input').focus();
+	}
+
+	_removeRow(row) {
+		const rows = this.#container.querySelectorAll('.tr-product-row');
+		if (rows.length <= 1) { this._clearRow(row); return; }
+		row.remove();
+		this._reindex();
+	}
+
+	_reindex() {
+		this.#container.querySelectorAll('.tr-product-row').forEach((row, i) => {
+			row.dataset.index = i;
+			row.querySelector('.tr-product-id-input').name = `transfer_products-${i}-product`;
+			row.querySelector('.tr-qty-input').name        = `transfer_products-${i}-quantity`;
+		});
+		this.#totalForms.value = this.#container.querySelectorAll('.tr-product-row').length;
+	}
+
+	_clearRow(row) {
+		row.querySelector('.tr-product-id-input').value = '';
+		row.querySelector('.tr-search-input').value     = '';
+		row.querySelector('.tr-qty-input').value        = '';
+		row.querySelector('.tr-search-clear').classList.add('hidden');
+		this._closeResults(row);
+	}
+
+	_closeResults(row) {
+		const box = row.querySelector('.tr-search-results');
+		box.innerHTML = '';
+		box.classList.add('hidden');
+	}
+
+	_closeAllResults() {
+		this.#container.querySelectorAll('.tr-search-results').forEach(box => {
+			box.innerHTML = '';
+			box.classList.add('hidden');
+		});
+	}
+
+	_esc(str) {
+		return String(str ?? '')
+			.replace(/&/g, '&amp;').replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+	}
 }
 
-new Transfers();
+new TransferModal();

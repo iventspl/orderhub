@@ -36,11 +36,11 @@
                 </label>
                 <label class="toolbar-label">
                     From
-                    <input type="date">
+                    <input type="date" id="o-date-from" name="date_from" value="{{ date_from }}">
                 </label>
                 <label class="toolbar-label">
                     To
-                    <input type="date">
+                    <input type="date" id="o-date-to" name="date_to" value="{{ date_to }}">
                 </label>
                 <div class="toolbar-divider"></div>
                 <div class="filters" role="group" aria-label="Filter orders by status">
@@ -52,7 +52,7 @@
                         </button>
                     {% endfor %}
                 </div>
-                <button class="btn btn-sm" id="reset-filters">Reset</button>
+                <button class="btn btn-sm btn-reset" id="reset-filters">Reset</button>
             </div>
         </div>
     <table>
@@ -203,11 +203,11 @@
                 </select>
             </label>
             {% if page_obj.has_previous %}
-                <a href="?page={{ page_obj.previous_page_number }}&rows={{ no_rows }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_by %}&sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}" class="btn btn-sm">Prev</a>
+                <a href="?page={{ page_obj.previous_page_number }}&rows={{ no_rows }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_by %}&sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" class="btn btn-sm">Prev</a>
             {% endif %}
             <span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
             {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}&rows={{ no_rows }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_by %}&sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}" class="btn btn-sm">Next</a>
+                <a href="?page={{ page_obj.next_page_number }}&rows={{ no_rows }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_by %}&sort={{ sort_by }}&dir={{ sort_dir }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" class="btn btn-sm">Next</a>
             {% endif %}
         </div>
     </div>

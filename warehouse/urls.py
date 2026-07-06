@@ -16,4 +16,5 @@ urlpatterns = [
         views.delete_warehouse_product,
         name='delete_warehouse_product',
     ),
+    path('<int:warehouse_id>/delete/', views.delete_warehouse, name='delete_warehouse'),
 ]

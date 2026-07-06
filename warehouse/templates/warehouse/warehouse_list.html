@@ -3,6 +3,9 @@
 {% block title %}
     Warehouse - Organized Company
 {% endblock title %}
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/warehouse.css' %}">
+{% endblock extra_css %}
 {% block content %}
     <!-- ============================================================
              5. WAREHOUSE
@@ -24,10 +27,9 @@
                             type="button"
                             onclick="openModal('warehouse-create-modal')">+ New warehouse</button>
                     <button class="btn btn-sm"
-                            id="wh-transfer"
                             type="button"
                             onclick="openModal('warehouse-transfer-modal')">Transfer stock</button>
-                    <button class="btn btn-sm" id="wh-history">Transfer history</button>
+                    <a href="{% url 'transfers:transfers_list' %}" class="btn btn-sm" id="wh-history">Transfer history</a>
                 </div>
             </div>
             <div class="dash-grid" style="padding: 16px;">
@@ -63,46 +65,50 @@
                         type="button"
                         onclick="closeModal('warehouse-transfer-modal')">&times;</button>
             </div>
-            <form>
+            <form id="transfer-form" method="post" action="{% url 'transfers:create_transfer' %}">
+                {% csrf_token %}
+                {{ transfer_formset.management_form }}
+
                 <div class="modal-body">
                     <div class="row">
                         <label>
-                            From warehouse
-                            <select name="from_warehouse">
-                                {% for warehouse in warehouses %}
-                                    <option value="{{ warehouse.id }}">{{ warehouse.name }} ({{ warehouse.city }})</option>
-                                {% endfor %}
-                            </select>
+                            {{ transfer_form.source_warehouse.label }}
+                            {{ transfer_form.source_warehouse }}
                         </label>
                         <label>
-                            To warehouse
-                            <select name="to_warehouse">
-                                {% for warehouse in warehouses %}
-                                    <option value="{{ warehouse.id }}">{{ warehouse.name }} ({{ warehouse.city }})</option>
-                                {% endfor %}
-                            </select>
+                            {{ transfer_form.destination_warehouse.label }}
+                            {{ transfer_form.destination_warehouse }}
                         </label>
                     </div>
-                    <div class="row">
-                        <label>
-                            SKU
-                            <input type="text" name="sku" placeholder="e.g. LEN-001" />
-                        </label>
-                        <label>
-                            Quantity
-                            <input type="number" name="quantity" min="1" step="1" placeholder="e.g. 10" />
-                        </label>
+
+                    <div id="tr-items-container">
+                        <div class="tr-product-row" data-index="0">
+                            <div class="tr-search-product">
+                                <input type="text" class="tr-search-input"
+                                       placeholder="Select a source warehouse first…"
+                                       autocomplete="off" disabled />
+                                <button type="button" class="tr-search-clear hidden" title="Clear">&times;</button>
+                                <div class="tr-search-results hidden"></div>
+                            </div>
+                            <input type="hidden" name="transfer_products-0-product" class="tr-product-id-input" />
+                            <input type="number"  name="transfer_products-0-quantity" class="tr-qty-input"
+                                   min="1" step="1" placeholder="Qty" />
+                            <button type="button" class="btn btn-sm btn-quiet tr-remove-row" title="Remove row">&times;</button>
+                        </div>
                     </div>
+
+                    <button type="button" id="tr-add-product" class="btn btn-sm" style="margin-top:6px">+ Add product</button>
+
                     <label>
                         Notes
-                        <textarea name="notes" rows="3" placeholder="Optional transfer note"></textarea>
+                        <textarea name="notes" rows="2" placeholder="Optional transfer note"></textarea>
                     </label>
                 </div>
                 <div class="modal-footer">
                     <button class="btn"
                             type="button"
                             onclick="closeModal('warehouse-transfer-modal')">Cancel</button>
-                    <button class="btn btn-primary" type="button">Create transfer</button>
+                    <button class="btn btn-primary" type="submit" id="tr-submit-btn">Create transfer</button>
                 </div>
             </form>
         </div>

@@ -1,6 +1,8 @@
 import json
 
 from .forms import WarehouseForm
+from transfers.forms import TransferForm, TransferProductFormSet
+from transfers.models import Transfer
 from django.contrib import messages
 from django.db import transaction
 from django.core.paginator import Paginator
@@ -54,10 +56,17 @@ def warehouse_list(request, warehouse_type=None):
         warehouse_type = warehouse_type.upper()
         warehouses = warehouses.filter(warehouse_type=warehouse_type)
     form = WarehouseForm()
+    transfer_form = TransferForm(company_id=user_company.company_id)
+    transfer_formset = TransferProductFormSet(
+        instance=Transfer(),
+        form_kwargs={'company_id': user_company.company_id},
+    )
     context = {
         'page': 'warehouse',
         'warehouses': warehouses,
         'form': form,
+        'transfer_form': transfer_form,
+        'transfer_formset': transfer_formset,
     }
     return render(request, 'warehouse/warehouse_list.html', context)
 
@@ -262,3 +271,33 @@ def delete_warehouse_product(request, warehouse_id, product_id):
     success_msg = f'Product {product.sku} removed from warehouse {warehouse.name}.'
     messages.success(request, success_msg)
     return JsonResponse({'ok': True, 'message': success_msg, 'product_id': product_id})
+
+
+@require_POST
+@login_required
+def delete_warehouse(request, warehouse_id):
+    membership   = get_object_or_404(Membership, user=request.user)
+    user_company = membership.company
+
+    if membership.role not in {Membership.Roles.ADMIN, Membership.Roles.MANAGER}:
+        return JsonResponse({'ok': False, 'error': 'Permission denied.'}, status=403)
+
+    warehouse = get_object_or_404(Warehouse, pk=warehouse_id, company_id=user_company.id)
+
+    if warehouse.warehouse_type == Warehouse.WarehouseType.MAIN:
+        return JsonResponse({'ok': False, 'error': 'The main warehouse cannot be deleted.'}, status=400)
+
+    occupied = Product.objects.filter(
+        product_location=warehouse,
+        company_id=user_company.id,
+        stock_quantity__gt=0,
+    )
+    if occupied.exists():
+        return JsonResponse(
+            {'ok': False, 'error': f'Warehouse still has {occupied.count()} product(s) with stock. Move or zero them out first.'},
+            status=400,
+        )
+
+    name = warehouse.name
+    warehouse.delete()
+    return JsonResponse({'ok': True, 'message': f'Warehouse "{name}" deleted.'})

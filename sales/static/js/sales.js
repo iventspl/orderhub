@@ -119,6 +119,8 @@ class SalesApp{
     #byStatus = document.querySelector('#o-status');
     #statusFilters = document.querySelector('.filters');
     #resetBtn = document.getElementById('reset-filters');
+    #dateFrom = document.getElementById('o-date-from');
+    #dateTo   = document.getElementById('o-date-to');
     #salesBody = document.querySelector('.orders-container')
     #rows = document.querySelectorAll('tr.clickable')
     #expandedRows = document.querySelectorAll('tr.expand-row')
@@ -444,6 +446,14 @@ class SalesApp{
             this._setQueryParamsAndReload({'filter_status': filterBtn.dataset.filterStatus});
         });
 
+        this.#dateFrom?.addEventListener('change', () => {
+            this._setQueryParamsAndReload({'date_from': this.#dateFrom.value, 'page': 1});
+        });
+
+        this.#dateTo?.addEventListener('change', () => {
+            this._setQueryParamsAndReload({'date_to': this.#dateTo.value, 'page': 1});
+        });
+
         this.#ship_to_select.addEventListener('change', (e)=>{
             const selectedValue = this.#ship_to_select.value;
             const customerShippementAddress = document.getElementById('customer_shippement_addres');
@@ -522,7 +532,9 @@ class SalesApp{
                 'search': '',
                 'filter_status': '',
                 'sort': '',
-                'dir': ''
+                'dir': '',
+                'date_from': '',
+                'date_to': '',
             });
         });
     }
@@ -597,6 +609,9 @@ class SalesApp{
         }
 
         this._restoreSelectValue(this.#byStatus, urlParams.get('filter_status'));
+
+        if (this.#dateFrom) this.#dateFrom.value = urlParams.get('date_from') || '';
+        if (this.#dateTo)   this.#dateTo.value   = urlParams.get('date_to')   || '';
     }
 
     _changeRowsToRender(no_rows){
