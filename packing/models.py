@@ -45,6 +45,7 @@ class PackingOrder(models.Model):
     packed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, blank=True, null=True)
     company = models.ForeignKey('users.Company', on_delete=models.CASCADE, related_name='packing_orders')
     notes = models.TextField(blank=True, null=True)
+    weight_kg = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
 
     def __str__(self):
         return f"Packing Order for {self.order.order_number} - Status: {self.status}"

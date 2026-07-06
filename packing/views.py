@@ -279,6 +279,9 @@ def ship_packing(request, packing_order_id):
     if not carrier or not tracking_number:
         return JsonResponse({'ok': False, 'error': 'carrier and tracking_number are required.'}, status=400)
 
+    weight_kg = payload.get('weight_kg')
+    notes = payload.get('notes', '').strip()
+
     tracking_status = Tracking.TrackingStatus.SHIPPED
     tracking_defaults = {
         'carrier': carrier,
@@ -302,7 +305,17 @@ def ship_packing(request, packing_order_id):
         # Używamy .save() zamiast .update(), żeby odpalić sygnał post_save
         # → deduct_main_stock_when_shipped zdejmie stock i reserved_quantity
         packing_order.status = PackingOrder.PackingStatus.SHIPPED
-        packing_order.save(update_fields=['status'])
+        packing_order_update_fields = ['status']
+        if weight_kg is not None:
+            try:
+                packing_order.weight_kg = float(weight_kg)
+                packing_order_update_fields.append('weight_kg')
+            except (TypeError, ValueError):
+                pass
+        if notes:
+            packing_order.notes = notes
+            packing_order_update_fields.append('notes')
+        packing_order.save(update_fields=packing_order_update_fields)
 
     return JsonResponse({'ok': True})
 

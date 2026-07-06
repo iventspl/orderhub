@@ -26,7 +26,7 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-z8fh)j3*uhqkr&g$4f6m-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['192.168.0.112', 'localhost', '127.0.0.1', '.ngrok-free.app', '.ngrok-free.dev', '.ngrok.io']
 
 
 # Application definition
@@ -163,3 +163,9 @@ MEDIA_ROOT = BASE_DIR / 'media'
 LOGIN_URL = 'users:user-login'
 LOGIN_REDIRECT_URL = 'mainapp:home'
 LOGOUT_REDIRECT_URL = 'users:user-login'
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.ngrok-free.app',
+    'https://*.ngrok-free.dev',
+    'https://*.ngrok.io',
+]
