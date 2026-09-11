@@ -1,180 +1,56 @@
 # OrganizedCompany
 
-OrganizedCompany is a Django-based operations platform for managing sales, inventory, warehouses, packing, tracking, customers, staff, and internal collaboration in a multi-company setup.
+A Django-based, multi-tenant operations platform for a small logistics/retail business — covering sales orders, multi-warehouse inventory, barcode-scanning packing, shipment tracking, customers, and staff, all scoped per company.
 
-## Overview
+<!-- Drop screenshots or a short GIF walkthrough in docs/images/ and reference them here, e.g.: -->
+<!-- ![Packing screen](docs/images/packing-screen.png) -->
 
-The application is built as a modular monolith with multiple Django apps, each responsible for a business area. It supports:
+## Highlights
 
-- Multi-tenant company context via Membership model
-- Sales order lifecycle management
-- Inventory management with per-warehouse stock and image uploads
-- Warehouse and transfer operations
-- Packing and tracking workflows
-- Customer and contact management
-- Staff management with role assignment
-- Discussion/help center modules
-- REST API endpoints for selected operations
+- **Multi-tenant by design** — every business object is scoped to a `Company` through a `Membership` model; one user can belong to several companies
+- **Atomic multi-warehouse stock reservation engine** — reserves from an employee's assigned warehouse first, overflows to the central warehouse, and stays correct under concurrent orders via row locking and `F()`-expression updates ([details](docs/FEATURES.md#multi-warehouse-stock-reservation-engine))
+- **Mobile camera barcode scanning** for packing, with a live progress bar, manual +/- fallback, and a full per-scan audit trail
+- **Partial shipment / backorder handling** — ship what's ready, auto-generate a backorder for the rest
+- **PDF packing lists** generated on demand (ReportLab, Unicode-safe for Polish text)
+- **REST API** for order data and product typeahead search (Django REST Framework)
+- See [docs/ENGINEERING_HIGHLIGHTS.md](docs/ENGINEERING_HIGHLIGHTS.md) for real concurrency/Django-internals bugs found and fixed while building the reservation engine
 
 ## Tech Stack
 
-- Python 3.12
-- Django 6.0.4
-- Django REST Framework
-- django-storages
-- Pillow (image handling)
-- python-decouple (environment variables)
-- SQLite (default) or PostgreSQL
+| Layer | Choice |
+|---|---|
+| Backend | Python 3.12, Django 6.0.4 |
+| API | Django REST Framework |
+| Database | SQLite (default) or PostgreSQL |
+| Frontend | Server-rendered Django templates, hand-written vanilla JS/CSS (no SPA framework) |
+| Barcode scanning | [html5-qrcode](https://github.com/mebjas/html5-qrcode) (client-side, device camera) |
+| PDF generation | ReportLab |
+| Config | python-decouple (.env-based settings) |
 
 ## Project Structure
 
-Main apps in this repository:
+One Django project (`core`) with ~14 apps, each owning a business domain — see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full app map, data model, and multi-tenancy design.
 
-- users: authentication, custom user, company, membership, profile
-- mainapp: dashboard/home and shared context processors
-- sales: sales orders and order items
-- inventory: product catalog, stock, product images
-- warehouse: warehouse entities and location logic
-- packing: packing workflow
-- tracking: shipment tracking
-- transfers: stock transfer workflows
-- customers: customer records
-- contacts: contact management
-- reports: reporting features
-- staff: staff and assignment management
-- discussion: internal discussion features
-- helpcenter: support/help center flows
-- api: REST endpoints
+## Documentation
 
-## Key Concepts
+- [Architecture](docs/ARCHITECTURE.md) — app map, data model, multi-tenancy, order lifecycle
+- [Features](docs/FEATURES.md) — deep-dives into the packing/scanning workflow, reservation engine, and backorder flow
+- [Engineering Highlights](docs/ENGINEERING_HIGHLIGHTS.md) — real concurrency and Django-signal bugs found and fixed
+- [API Reference](docs/API.md) — REST endpoints with example requests/responses
+- [Setup Guide](docs/SETUP.md) — full local installation and configuration steps
 
-### Multi-Company Access
-
-The platform is scoped by company membership. Most business queries filter by the active user company.
-
-### Inventory Model
-
-Products are unique per SKU and warehouse location (unique constraint). Available quantities are computed across warehouse types (shop/main) and adjusted by reserved quantities.
-
-### Sales Lifecycle
-
-Sales orders include statuses such as Draft, In Warehouse, Packed, Shipped, Delivered, Paid, and Cancelled. Order number generation and order value calculation are handled in model logic.
-
-## API Endpoints
-
-Base path: /api/
-
-- GET /api/sales-orders/
-  - Returns sales orders for the authenticated user company
-- GET /api/products/search/?q=<query>
-  - Returns up to 10 matching products for the authenticated user company
-
-Authentication is required for API endpoints.
-
-## Local Setup
-
-## 1. Clone repository
+## Quick Start
 
 ```bash
-git clone <your-repository-url>
-cd OrganizedCompany
-```
-
-## 2. Create and activate virtual environment
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-```
-
-On Windows (PowerShell):
-
-```powershell
-.venv\Scripts\Activate.ps1
-```
-
-## 3. Install dependencies
-
-```bash
+git clone <your-repository-url> && cd OrganizedCompany
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-```
-
-## 4. Configure environment variables
-
-Create a .env file (you can copy from .env.example):
-
-```env
-SECRET_KEY=change-me
-DEBUG=True
-
-# Supported values: sqlite3, postgresql
-DB_ENGINE=sqlite3
-
-# PostgreSQL settings
-POSTGRES_DB=organizedcompany
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
-```
-
-## 5. Apply migrations
-
-```bash
+cp .env.example .env   # then edit as needed
 python manage.py migrate
-```
-
-## 6. Create superuser (optional, recommended)
-
-```bash
-python manage.py createsuperuser
-```
-
-## 7. Run development server
-
-```bash
 python manage.py runserver
 ```
 
-Open: http://127.0.0.1:8000/
-
-## Database Configuration
-
-The project supports two database modes selected by DB_ENGINE:
-
-- sqlite3 (default): uses local db.sqlite3
-- postgresql: reads PostgreSQL credentials from environment variables
-
-## Static and Media Files
-
-- Static URL: /static/
-- Media URL: /media/
-- Uploaded product images are stored under media/product_images/
-
-In development mode, static and media routes are served by Django.
-
-## Authentication Notes
-
-- Login route: /users/login/
-- Logout route: /users/logout/
-- Self-registration is disabled in routes; users are typically created by admin/staff workflows.
-
-## Running Tests
-
-```bash
-python manage.py test
-```
-
-## Production Notes
-
-Before production deployment:
-
-- Set DEBUG=False
-- Set a strong SECRET_KEY
-- Configure ALLOWED_HOSTS
-- Configure a production database (PostgreSQL recommended)
-- Serve static/media via proper web server or object storage
-- Add security hardening (HTTPS, secure cookies, CSRF/session settings)
+Full walkthrough, environment variables, and production notes: [docs/SETUP.md](docs/SETUP.md).
 
 ## License
 
