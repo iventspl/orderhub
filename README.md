@@ -7,7 +7,7 @@ A Django-based, multi-tenant operations platform for a small logistics/retail bu
 
 ## Highlights
 
-- **Multi-tenant by design** — every business object is scoped to a `Company` through a `Membership` model; one user can belong to several companies
+- **Multi-tenant by design** — every business object is scoped to a `Company` through a `Membership` model; one user can belong to one company
 - **Atomic multi-warehouse stock reservation engine** — reserves from an employee's assigned warehouse first, overflows to the central warehouse, and stays correct under concurrent orders via row locking and `F()`-expression updates ([details](docs/FEATURES.md#multi-warehouse-stock-reservation-engine))
 - **Mobile camera barcode scanning** for packing, with a live progress bar, manual +/- fallback, and a full per-scan audit trail
 - **Partial shipment / backorder handling** — ship what's ready, auto-generate a backorder for the rest
