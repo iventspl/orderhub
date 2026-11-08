@@ -1,10 +1,35 @@
-venv/
+# Ignore md files except of readme
+*.md
+!README.md
+# Ignore Python cache files
+*.pyc
 __pycache__/
-*.py[cod]
-*.pyo
-db.sqlite3
-media/
-staticfiles/
+# Ignore SQLite database
+*.sqlite3
+# Ignore environment variables and settings
 .env
+.venv
+!.env.example
+# Ignore logs and backups
 *.log
-.venv/
+*.bak
+# Ignore virtual environments
+venv/
+.env/
+# Ignore Django migrations cache
+*.pyc
+migrations/**/__pycache__/
+# Ignore media and static files
+media/
+static/
+# Ignore IDE and editor settings
+.vscode/
+.idea/
+# Ignore testing and coverage reports
+.tox/
+.coverage
+htmlcov/
+.pytest_cache/
+# Ignore deployment files
+*.tar.gz
+*.zip
